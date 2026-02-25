@@ -11,6 +11,9 @@ public class Constants {
     // user status
     public final static String USER_ACTIVE_STATUS = "ACTIVE";
     public final static String USER_INACTIVE_STATUS = "INACTIVE";
+    public final static String USER_PENDING_STATUS = "PENDING";
+    public final static String USER_APPROVED_STATUS = "APPROVED";
+    public final static String USER_FORGOT_PASSWORD_PENDING_STATUS = "FORGOT_PASSWORD_PENDING";
 
     // customer status
     public final static String CUSTOMER_ACTIVE_STATUS = "ACTIVE";
