@@ -1,19 +1,19 @@
 package lk.icbt.findit.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
-import java.util.List;
+import lombok.Data;
 
 @Entity
-@Table(name = "merchants")
-@Getter
-@Setter
-public class Merchant extends AbstractEntity {
+@Table(name = "sub_merchants")
+@Data
+public class SubMerchant extends AbstractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "merchant_id")
-    private Long merchantId;
+    @Column(name = "sub_merchant_id")
+    private Long subMerchantId;
+    @ManyToOne
+    @JoinColumn(name = "merchant_id", nullable = false)
+    private Merchant merchant;
     @Column(name = "merchant_name", nullable = false)
     private String merchantName;
     @Column(name = "merchant_email", nullable = false, unique = true)
@@ -33,11 +33,4 @@ public class Merchant extends AbstractEntity {
     private String status;
     @Column(name = "inactive_reason")
     private String inactiveReason;
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "merchant",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true)
-    private List<SubMerchant> subMerchants;
 }
