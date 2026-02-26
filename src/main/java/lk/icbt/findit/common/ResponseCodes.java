@@ -20,4 +20,17 @@ public class ResponseCodes {
     public static final String FORGOT_PASSWORD_NOT_PENDING_CODE = "5306";
     public static final String SYSTEM_USER_FORGOT_PASSWORD_NOT_ALLOWED_CODE = "5307";
     public static final String INVALID_LOGIN_CREDENTIALS_CODE = "5308";
+    public static final String MERCHANT_EMAIL_ALREADY_EXISTS_CODE = "5401";
+    public static final String MERCHANT_NOT_FOUND_CODE = "5402";
+    public static final String MERCHANT_ALREADY_APPROVED_CODE = "5403";
+    public static final String INVALID_MERCHANT_STATUS_CODE = "5404";
+    public static final String MERCHANT_NOT_LINKED_CODE = "5405";
+    public static final String SUB_MERCHANT_EMAIL_ALREADY_EXISTS_CODE = "5501";
+    public static final String MERCHANT_ID_REQUIRED_CODE = "5502";
+    public static final String SUB_MERCHANT_NOT_FOUND_CODE = "5503";
+    public static final String SUB_MERCHANT_NOT_PENDING_CODE = "5504";
+    public static final String SUB_MERCHANT_NOT_OWNED_CODE = "5505";
+    public static final String NOT_A_MERCHANT_USER_CODE = "5506";
+    public static final String NOT_A_SUB_MERCHANT_USER_CODE = "5507";
+    public static final String NOT_MERCHANT_OR_SUB_MERCHANT_CODE = "5508";
 }

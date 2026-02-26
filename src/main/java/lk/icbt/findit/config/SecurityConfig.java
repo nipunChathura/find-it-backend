@@ -1,7 +1,7 @@
 package lk.icbt.findit.config;
 
 import lk.icbt.findit.security.CustomUserDetailsService;
-import lk.icbt.findit.security.JwtAuthenticationFilter;
+import lk.icbt.findit.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtFilter jwtFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,14 +39,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/registration").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/users/approval/**").hasRole("SYSADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/merchants/onboarding").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/merchants/login").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/merchants/profile").hasRole("MERCHANT")
+                        .requestMatchers(HttpMethod.POST, "/api/sub-merchants").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT")
+                        .requestMatchers("/api/admin/**").hasAnyRole("SYSADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/password/change").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/users/password/forgot").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/password/forgot/approval/**").hasRole("SYSADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(basic -> {})
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

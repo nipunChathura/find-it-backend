@@ -22,6 +22,7 @@ public class Constants {
     // merchant status
     public final static String MERCHANT_ACTIVE_STATUS = "ACTIVE";
     public final static String MERCHANT_INACTIVE_STATUS = "INACTIVE";
+    public final static String MERCHANT_PENDING_STATUS = "PENDING";
 
     // DB boolean value
     public static final String DB_TRUE = "Y";

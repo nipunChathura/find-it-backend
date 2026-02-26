@@ -34,4 +34,10 @@ public class User extends AbstractEntity {
 
     @Column(name = "last_login")
     private Date lastLogin;
+
+    @Column(name = "merchant_id")
+    private Long merchantId;
+
+    @Column(name = "sub_merchant_id")
+    private Long subMerchantId;
 }
