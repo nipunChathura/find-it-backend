@@ -5,7 +5,6 @@ import lk.icbt.findit.dto.ForgetPasswordDTO;
 import lk.icbt.findit.dto.ForgotPasswordApprovalDTO;
 import lk.icbt.findit.dto.LoginDTO;
 import lk.icbt.findit.dto.PasswordChangeDTO;
-import lk.icbt.findit.dto.UserApprovalDTO;
 import lk.icbt.findit.dto.UserRegistrationDTO;
 import lk.icbt.findit.request.UserRequest;
 import lk.icbt.findit.response.UserResponse;
@@ -51,22 +50,6 @@ public class UserController {
         UserResponse response = new UserResponse();
         mapResultToResponse(result, response);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PutMapping(value = "/approval/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<UserResponse> approveUser(@PathVariable Long userId) {
-        UserRequest request = new UserRequest();
-        request.setUserId(userId);
-
-        UserApprovalDTO dto = new UserApprovalDTO();
-        BeanUtils.copyProperties(request, dto);
-
-        UserApprovalDTO result = userService.approveUser(dto);
-
-        UserResponse response = new UserResponse();
-        mapResultToResponse(result, response);
-        return ResponseEntity.ok(response);
     }
 
     @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -131,10 +114,6 @@ public class UserController {
             response.setUserStatus(reg.getUserStatus());
             response.setIsSystemUser(reg.getIsSystemUser());
             response.setRole(reg.getRole());
-        } else if (result instanceof UserApprovalDTO approval) {
-            response.setUserId(approval.getUserId());
-            response.setUsername(approval.getUsername());
-            response.setUserStatus(approval.getUserStatus());
         } else if (result instanceof PasswordChangeDTO || result instanceof ForgetPasswordDTO || result instanceof ForgotPasswordApprovalDTO) {
             // Only status, responseCode, responseMessage set above
         }
