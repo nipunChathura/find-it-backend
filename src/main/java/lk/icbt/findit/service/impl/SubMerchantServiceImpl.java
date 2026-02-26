@@ -75,6 +75,12 @@ public class SubMerchantServiceImpl implements SubMerchantService {
     @Override
     @Transactional
     public SubMerchantAddDTO addSubMerchantWithAuth(SubMerchantAddDTO dto, String authenticatedUsername) {
+        if (dto.getMerchantId() == null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.MERCHANT_ID_REQUIRED_CODE,
+                    "Merchant ID is required"
+            );
+        }
         if (authenticatedUsername != null && !authenticatedUsername.isBlank()) {
             User user = userRepository.findByUsername(authenticatedUsername)
                     .orElseThrow(() -> new InvalidRequestException(
@@ -82,16 +88,15 @@ public class SubMerchantServiceImpl implements SubMerchantService {
                             "User not found"
                     ));
             if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null && user.getSubMerchantId() == null) {
-                dto.setMerchantId(user.getMerchantId());
+                if (!dto.getMerchantId().equals(user.getMerchantId())) {
+                    throw new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_LINKED_CODE,
+                            "Merchant ID must match your account"
+                    );
+                }
                 dto.setActiveOnCreate(true);
                 return addSubMerchant(dto);
             }
-        }
-        if (dto.getMerchantId() == null) {
-            throw new InvalidRequestException(
-                    ResponseCodes.MERCHANT_ID_REQUIRED_CODE,
-                    "Merchant ID is required for admin"
-            );
         }
         dto.setActiveOnCreate(false);
         return addSubMerchant(dto);

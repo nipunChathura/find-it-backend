@@ -11,6 +11,7 @@ import lombok.Data;
 @Data
 public class SubMerchantAddRequest {
 
+    @NotNull(message = "Merchant ID is required")
     private Long merchantId;
 
     @NotBlank(message = "Merchant name is required")
