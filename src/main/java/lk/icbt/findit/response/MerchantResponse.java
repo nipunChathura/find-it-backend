@@ -13,6 +13,9 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MerchantResponse extends Response {
     private Long merchantId;
+    private Long subMerchantId;
+    private String parentMerchantName;
+    private String username;
     private String merchantName;
     private String merchantEmail;
     private String merchantNic;

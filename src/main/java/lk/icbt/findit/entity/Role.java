@@ -4,5 +4,7 @@ public enum Role {
     SYSADMIN,
     ADMIN,
     USER,
-    MERCHANT
+    MERCHANT,
+    SUBMERCHANT,
+    CUSTOMER
 }

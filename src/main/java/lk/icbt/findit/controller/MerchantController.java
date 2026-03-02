@@ -2,12 +2,18 @@ package lk.icbt.findit.controller;
 
 import jakarta.validation.Valid;
 import lk.icbt.findit.dto.*;
+import lk.icbt.findit.request.MerchantOnboardingRequest;
 import lk.icbt.findit.request.MerchantRequest;
 import lk.icbt.findit.request.SubMerchantStatusChangeRequest;
 import lk.icbt.findit.request.UserRequest;
+import lk.icbt.findit.entity.Role;
+import lk.icbt.findit.entity.User;
+import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.response.MerchantLoginResponse;
 import lk.icbt.findit.response.MerchantResponse;
+import lk.icbt.findit.response.MerchantWithOutletsResponse;
 import lk.icbt.findit.response.SubMerchantResponse;
+import lk.icbt.findit.response.SubMerchantWithOutletsResponse;
 import lk.icbt.findit.service.MerchantService;
 import lk.icbt.findit.service.SubMerchantService;
 import lk.icbt.findit.service.UserService;
@@ -32,6 +38,30 @@ public class MerchantController {
     private final MerchantService merchantService;
     private final SubMerchantService subMerchantService;
     private final UserService userService;
+    private final UserRepository userRepository;
+
+    @PreAuthorize("hasAnyRole('MERCHANT', 'SUBMERCHANT')")
+    @GetMapping(value = "/with-outlets", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> getMyMerchantOrSubMerchantWithOutlets() {
+        String username = getAuthenticatedUsername();
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
+            MerchantWithOutletsResponse response = merchantService.getMerchantWithOutlets(user.getMerchantId());
+            return ResponseEntity.ok(response);
+        }
+        if (user.getRole() == Role.SUBMERCHANT && user.getSubMerchantId() != null) {
+            SubMerchantWithOutletsResponse response = subMerchantService.getSubMerchantWithOutlets(user.getSubMerchantId());
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -47,7 +77,7 @@ public class MerchantController {
 
     @PostMapping(value = "/onboarding", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<MerchantResponse> onboard(@Valid @RequestBody MerchantRequest request) {
+    public ResponseEntity<MerchantResponse> onboard(@Valid @RequestBody MerchantOnboardingRequest request) {
         MerchantOnboardingDTO dto = new MerchantOnboardingDTO();
         BeanUtils.copyProperties(request, dto);
         MerchantOnboardingDTO result = merchantService.onboard(dto);

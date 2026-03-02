@@ -1,0 +1,928 @@
+{
+  "info": {
+    "name": "Find It API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns itemIds and items (itemId, itemName). Optional filters: status, itemId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:9090/find-it" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"your_username\",\n  \"password\": \"your_password\"\n}" },
+            "url": "{{baseUrl}}/api/users/login",
+            "description": "On success (200), Tests script saves response.token to collection variable 'token' and to environment variable 'token' if present.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    var json = pm.response.json();",
+                    "    if (json && json.token) {",
+                    "        pm.collectionVariables.set('token', json.token);",
+                    "        if (typeof pm.environment !== 'undefined' && pm.environment.set) {",
+                    "            pm.environment.set('token', json.token);",
+                    "        }",
+                    "    }",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Registration",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"SecurePass123\"\n}" },
+            "url": "{{baseUrl}}/api/users/registration",
+            "description": "Public. Registers a new user (username, password). Use Login to get token."
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
+            "url": "{{baseUrl}}/api/users/password/change"
+          }
+        },
+        {
+          "name": "Forgot password (request reset)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_to_reset\"\n}" },
+            "url": "{{baseUrl}}/api/users/password/forgot"
+          }
+        },
+        {
+          "name": "Forgot password approval (SYSADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"newPassword\": \"new_password_after_approval\"\n}" },
+            "url": "{{baseUrl}}/api/users/password/forgot/approval/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Add user (SYSADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin_user\",\n  \"password\": \"SecurePass123\",\n  \"email\": \"admin@example.com\",\n  \"role\": \"ADMIN\",\n  \"status\": \"PENDING\"\n}" },
+            "url": "{{baseUrl}}/api/admin/users"
+          }
+        },
+        {
+          "name": "Get all users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/users?status=&search=",
+            "description": "Excludes MERCHANT and SUBMERCHANT. SYSADMIN or ADMIN."
+          }
+        },
+        {
+          "name": "Update user (SYSADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"updated_username\",\n  \"email\": \"updated@example.com\",\n  \"role\": \"ADMIN\",\n  \"status\": \"ACTIVE\",\n  \"merchantId\": null,\n  \"subMerchantId\": null\n}" },
+            "url": "{{baseUrl}}/api/admin/users/1"
+          }
+        },
+        {
+          "name": "Update user status (SYSADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/admin/users/1/status",
+            "description": "Status: ACTIVE, INACTIVE, PENDING, APPROVED, DELETED."
+          }
+        },
+        {
+          "name": "Approve user (SYSADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/users/approval/1"
+          }
+        },
+        {
+          "name": "Get all merchants",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/merchants?name=&email=&username=&status=&merchantType="
+          }
+        },
+        {
+          "name": "Add merchant (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"Admin Added Merchant\",\n  \"merchantEmail\": \"adminmerchant@example.com\",\n  \"merchantAddress\": \"123 Street\",\n  \"merchantPhoneNumber\": \"0771234567\",\n  \"merchantType\": \"GOLD\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants",
+            "description": "Creates merchant. Response includes merchant with outlets list (empty for new merchant)."
+          }
+        },
+        {
+          "name": "Approve merchant",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/merchants/approval/1",
+            "description": "SYSADMIN or ADMIN. Sets merchant status to ACTIVE and linked user(s) (role MERCHANT) to ACTIVE so the merchant can log in."
+          }
+        },
+        {
+          "name": "Update merchant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"Updated Merchant Ltd\",\n  \"merchantEmail\": \"updated@merchant.com\",\n  \"merchantNic\": \"199012345678\",\n  \"merchantProfileImage\": null,\n  \"merchantAddress\": \"123 New Street, Colombo\",\n  \"merchantPhoneNumber\": \"0771234567\",\n  \"merchantType\": \"GOLD\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants/1"
+          }
+        },
+        {
+          "name": "Change merchant status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\",\n  \"inactiveReason\": \"\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants/1/status"
+          }
+        },
+        {
+          "name": "Add sub-merchant (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"Branch A\",\n  \"merchantEmail\": \"brancha@example.com\",\n  \"merchantAddress\": \"50 Branch Rd\",\n  \"merchantPhoneNumber\": \"0779876543\",\n  \"merchantType\": \"SILVER\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants/1/sub-merchants",
+            "description": "Creates sub-merchant under merchant. Response includes sub-merchant with outlets list (empty for new)."
+          }
+        },
+        {
+          "name": "Get all outlets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/outlets?search=&status=&outletType="
+          }
+        },
+        {
+          "name": "Verify outlet payment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/outlets/1/verify-payment",
+            "description": "Sets outlet to ACTIVE and extends subscription. SYSADMIN or ADMIN."
+          }
+        },
+        {
+          "name": "Update outlet status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/admin/outlets/1/status",
+            "description": "Status: ACTIVE, PENDING, PENDING_SUBSCRIPTION, EXPIRED_SUBSCRIPTION."
+          }
+        },
+        {
+          "name": "Approve payment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/payments/1/approve",
+            "description": "Admin only. Sets payment to APPROVED. If outlet status is PENDING_SUBSCRIPTION, activates outlet and extends subscription. SYSADMIN or ADMIN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Merchants",
+      "item": [
+        {
+          "name": "Merchant login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"store@example.com\",\n  \"password\": \"your_password\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/login",
+            "description": "Use merchant/sub-merchant email as username. On success (200), Tests script saves response.token to collection variable 'token' and to environment variable 'token' if present.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    var json = pm.response.json();",
+                    "    if (json && json.token) {",
+                    "        pm.collectionVariables.set('token', json.token);",
+                    "        if (typeof pm.environment !== 'undefined' && pm.environment.set) {",
+                    "            pm.environment.set('token', json.token);",
+                    "        }",
+                    "    }",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get my merchant/sub-merchant with outlets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/merchants/with-outlets",
+            "description": "MERCHANT and SUBMERCHANT only. Returns the logged-in user's merchant (or sub-merchant) with all assigned outlets. Use token from Merchant login."
+          }
+        },
+        {
+          "name": "Merchant onboarding (main)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"My Store Ltd\",\n  \"merchantEmail\": \"store@example.com\",\n  \"merchantNic\": \"199012345678\",\n  \"merchantProfileImage\": null,\n  \"merchantAddress\": \"100 Main Road, Colombo\",\n  \"merchantPhoneNumber\": \"0771234567\",\n  \"merchantType\": \"SILVER\",\n  \"password\": \"SecurePass123\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/onboarding",
+            "description": "Login uses email as username. No parentMerchantId = main merchant."
+          }
+        },
+        {
+          "name": "Merchant onboarding (sub-merchant)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"Branch Store\",\n  \"merchantEmail\": \"branch@example.com\",\n  \"merchantAddress\": \"50 Branch Rd\",\n  \"merchantPhoneNumber\": \"0779876543\",\n  \"merchantType\": \"SILVER\",\n  \"parentMerchantId\": 1,\n  \"password\": \"SecurePass123\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/onboarding",
+            "description": "parentMerchantId = sub-merchant under that merchant. Login with email."
+          }
+        },
+        {
+          "name": "Update merchant profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"My Store Ltd (Updated)\",\n  \"merchantEmail\": \"updated@example.com\",\n  \"merchantNic\": \"199012345678\",\n  \"merchantProfileImage\": null,\n  \"merchantAddress\": \"200 New Street, Colombo\",\n  \"merchantPhoneNumber\": \"0779876543\",\n  \"merchantType\": \"GOLD\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/profile"
+          }
+        },
+        {
+          "name": "Approve sub-merchant",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/merchants/sub-merchants/1/approve"
+          }
+        },
+        {
+          "name": "Update sub-merchant status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\",\n  \"inactiveReason\": \"\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/sub-merchants/1/status"
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/password/change"
+          }
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"store@example.com\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/password/forgot"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sub-merchants",
+      "item": [
+        {
+          "name": "Add sub-merchant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantId\": 1,\n  \"merchantName\": \"Branch Manager\",\n  \"merchantEmail\": \"branch@example.com\",\n  \"merchantNic\": \"199512345678\",\n  \"merchantProfileImage\": null,\n  \"merchantAddress\": \"50 Branch Road, Kandy\",\n  \"merchantPhoneNumber\": \"0772223344\",\n  \"merchantType\": \"SILVER\"\n}" },
+            "url": "{{baseUrl}}/api/sub-merchants"
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
+            "url": "{{baseUrl}}/api/sub-merchants/password/change"
+          }
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"sub_merchant_email@example.com\"\n}" },
+            "url": "{{baseUrl}}/api/sub-merchants/password/forgot"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outlets",
+      "item": [
+        {
+          "name": "Add outlet",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"merchantId\": 1,\n  \"subMerchantId\": null,\n  \"outletName\": \"Main Branch Store\",\n  \"businessRegistrationNumber\": \"BRN-12345\",\n  \"taxIdentificationNumber\": \"TIN-67890\",\n  \"postalCode\": \"10100\",\n  \"provinceId\": 1,\n  \"districtId\": 1,\n  \"cityId\": 1,\n  \"contactNumber\": \"0771234567\",\n  \"emailAddress\": \"branch@example.com\",\n  \"addressLine1\": \"123 Main Street\",\n  \"addressLine2\": \"Building A, Floor 2\",\n  \"outletType\": \"PHYSICAL_STORE\",\n  \"businessCategory\": \"RESTAURANT\",\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"bankName\": \"Commercial Bank\",\n  \"bankBranch\": \"Colombo Main\",\n  \"accountNumber\": \"1234567890\",\n  \"accountHolderName\": \"Outlet Name\",\n  \"remarks\": \"Optional notes\"\n}" },
+            "url": "{{baseUrl}}/api/outlets",
+            "description": "MERCHANT, SUBMERCHANT, ADMIN, SYSADMIN. Required: merchantId, outletName. All other fields optional (subMerchantId, provinceId, districtId, cityId, bank, location, etc.)."
+          }
+        },
+        {
+          "name": "Approve outlet (merchant user)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets/1/approve",
+            "description": "Main merchant only. Sets status to ACTIVE."
+          }
+        },
+        {
+          "name": "Submit payment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets/1/submit-payment",
+            "description": "Outlet owner. Status → PENDING_SUBSCRIPTION. MERCHANT or SUBMERCHANT."
+          }
+        },
+        {
+          "name": "Update outlet",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"outletName\": \"Updated Branch Name\",\n  \"contactNumber\": \"0779876543\",\n  \"emailAddress\": \"updated@example.com\",\n  \"addressLine1\": \"456 New Street\",\n  \"outletType\": \"PHYSICAL_STORE\",\n  \"businessCategory\": \"CAFE\"\n}" },
+            "url": "{{baseUrl}}/api/outlets/1",
+            "description": "Owner or ADMIN/SYSADMIN. Does not change merchant, sub-merchant, or status."
+          }
+        },
+        {
+          "name": "List outlets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets?name=&status=",
+            "description": "Query: name (optional), status (optional). Response: id, name, status, currentStatus (OPEN/CLOSED)."
+          }
+        },
+        {
+          "name": "Get outlet schedules",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets/1/schedules?date=2026-03-05&dayOfWeek=MONDAY",
+            "description": "Schedules grouped by type. Optional: date (YYYY-MM-DD), dayOfWeek (MONDAY, TUESDAY, ...)."
+          }
+        },
+        {
+          "name": "Check outlet status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets/1/status?datetime=2026-03-05T11:00",
+            "description": "Query: datetime (optional, ISO-8601). Returns outletId, is_closed (Y/N), status (OPEN/CLOSED), openTime, closeTime (included when closed)."
+          }
+        },
+        {
+          "name": "Create schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"scheduleType\": \"EMERGENCY\",\n  \"dayOfWeek\": null,\n  \"specialDate\": \"2026-03-05\",\n  \"startDate\": null,\n  \"endDate\": null,\n  \"openTime\": \"10:00\",\n  \"closeTime\": \"15:00\",\n  \"isClosed\": false,\n  \"reason\": \"Power Cut\"\n}" },
+            "url": "{{baseUrl}}/api/outlets/1/schedules",
+            "description": "scheduleType: NORMAL, EMERGENCY, TEMPORARY, DAILY. For NORMAL set dayOfWeek; TEMPORARY set startDate, endDate; time HH:mm."
+          }
+        },
+        {
+          "name": "Update schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"scheduleType\": \"EMERGENCY\",\n  \"dayOfWeek\": null,\n  \"specialDate\": \"2026-03-05\",\n  \"startDate\": null,\n  \"endDate\": null,\n  \"openTime\": \"10:00\",\n  \"closeTime\": \"15:00\",\n  \"isClosed\": false,\n  \"reason\": \"Power Cut\"\n}" },
+            "url": "{{baseUrl}}/api/outlets/1/schedules/1",
+            "description": "Same body as create."
+          }
+        },
+        {
+          "name": "Delete schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/outlets/1/schedules/1",
+            "description": "Soft delete: sets schedule status to DELETED. Returns 200 with message: Schedule deleted successfully."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryName\": \"Electronics\",\n  \"categoryDescription\": \"Electronic items\",\n  \"categoryImage\": null,\n  \"categoryType\": \"ITEM\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "Get category by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/categories/1",
+            "description": "Returns single category by id."
+          }
+        },
+        {
+          "name": "Get all categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/categories?name=&categoryType=&status="
+          }
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryName\": \"Electronics (Updated)\",\n  \"categoryDescription\": \"Updated description\",\n  \"categoryImage\": null,\n  \"categoryType\": \"ITEM\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/categories/1"
+          }
+        },
+        {
+          "name": "Delete category",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/categories/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "Create item",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"itemName\": \"Sample Product\",\n  \"itemDescription\": \"Product description\",\n  \"categoryId\": 1,\n  \"outletId\": 1,\n  \"price\": 99.99,\n  \"availability\": true,\n  \"itemImage\": null,\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/items",
+            "description": "Required: itemName, categoryId, outletId, price. Optional: itemDescription, availability (default true), itemImage, status (default ACTIVE). SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT."
+          }
+        },
+        {
+          "name": "Get item by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/items/1",
+            "description": "Returns single item with categoryName, categoryTypeName, outletName."
+          }
+        },
+        {
+          "name": "Search items",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/items?search=&categoryId=&outletId=&status=&availability=",
+            "description": "All query params optional: search (name/description), categoryId, outletId, status, availability (true/false). Response includes categoryTypeName for each item."
+          }
+        },
+        {
+          "name": "Update item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"itemName\": \"Updated Product Name\",\n  \"itemDescription\": \"Updated description\",\n  \"categoryId\": 1,\n  \"outletId\": 1,\n  \"price\": 129.99,\n  \"availability\": true,\n  \"itemImage\": null,\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/items/1",
+            "description": "All fields optional; only provided fields are updated."
+          }
+        },
+        {
+          "name": "Delete item",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/items/1",
+            "description": "Returns 204 No Content. SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discounts",
+      "item": [
+        {
+          "name": "Create discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"discountName\": \"Summer Sale\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 15.0,\n  \"startDate\": \"2026-03-01\",\n  \"endDate\": \"2026-03-31\",\n  \"status\": \"ACTIVE\",\n  \"itemIds\": [1, 2]\n}" },
+            "url": "{{baseUrl}}/api/discounts",
+            "description": "Required: discountName, discountType (PERCENTAGE or FIXED_AMOUNT), discountValue. Optional: startDate, endDate (yyyy-MM-dd), status (default ACTIVE), itemIds (list of item IDs to link)."
+          }
+        },
+        {
+          "name": "Get discount by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/discounts/1",
+            "description": "Returns discount with itemIds and item details."
+          }
+        },
+        {
+          "name": "List discounts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/discounts?status=&itemId=",
+            "description": "Optional: status, itemId (filter by item). Response includes itemIds and items (array of itemId, itemName)."
+          }
+        },
+        {
+          "name": "Update discount",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"discountName\": \"Summer Sale Updated\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 20.0,\n  \"startDate\": \"2026-03-01\",\n  \"endDate\": \"2026-03-31\",\n  \"status\": \"ACTIVE\",\n  \"itemIds\": [1, 2, 3]\n}" },
+            "url": "{{baseUrl}}/api/discounts/1",
+            "description": "Provide itemIds to replace linked items; omit to keep existing."
+          }
+        },
+        {
+          "name": "Delete discount",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/discounts/1",
+            "description": "Returns 204 No Content. Removes discount and its item links."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"outletId\": 1,\n  \"paymentType\": \"SUBSCRIPTION\",\n  \"amount\": 5000.00,\n  \"paymentDate\": \"2026-03-01\",\n  \"paidMonth\": \"2026-03\",\n  \"receiptImage\": null,\n  \"status\": \"PENDING\"\n}" },
+            "url": "{{baseUrl}}/api/payments",
+            "description": "Required: outletId, paymentType, amount. Optional: paymentDate (yyyy-MM-dd), paidMonth, receiptImage, status (default PENDING)."
+          }
+        },
+        {
+          "name": "Get payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/payments/1",
+            "description": "Returns a single payment by id."
+          }
+        },
+        {
+          "name": "List payments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/payments?outletId=&status=",
+            "description": "Optional: outletId, status (PENDING, APPROVED, REJECTED)."
+          }
+        },
+        {
+          "name": "Update payment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"outletId\": 1,\n  \"paymentType\": \"SUBSCRIPTION\",\n  \"amount\": 5000.00,\n  \"paymentDate\": \"2026-03-01\",\n  \"paidMonth\": \"2026-03\",\n  \"receiptImage\": null,\n  \"status\": \"PENDING\"\n}" },
+            "url": "{{baseUrl}}/api/payments/1",
+            "description": "Update payment by id. Same body fields as create."
+          }
+        },
+        {
+          "name": "Delete payment",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/payments/1",
+            "description": "Returns 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Send notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"userId\": 1,\n  \"type\": \"ADMIN\",\n  \"title\": \"Welcome\",\n  \"body\": \"Your account is ready.\",\n  \"token\": null\n}" },
+            "url": "{{baseUrl}}/api/notifications/send",
+            "description": "Saves notification to DB. If token (FCM device token) is provided, also sends push notification. Required: userId, type, title. Optional: body, token."
+          }
+        },
+        {
+          "name": "Get unread notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/unread/1",
+            "description": "Returns unread notifications for the given userId."
+          }
+        },
+        {
+          "name": "Mark notification as read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/read/1",
+            "description": "Marks the notification by id as read."
+          }
+        },
+        {
+          "name": "Get notifications by type",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/type/1?type=ADMIN",
+            "description": "Returns notifications for userId filtered by type (e.g. ADMIN, CUSTOMER)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Customer login (email + password)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Pass123\"\n}" },
+            "url": "{{baseUrl}}/api/customers/login",
+            "description": "Public. Customer login with email and password. On success (200), response includes token, userId, email, customerId. Use token in Authorization: Bearer {{token}} for protected customer endpoints.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    var json = pm.response.json();",
+                    "    if (json && json.token) {",
+                    "        pm.collectionVariables.set('token', json.token);",
+                    "        if (typeof pm.environment !== 'undefined' && pm.environment.set) {",
+                    "            pm.environment.set('token', json.token);",
+                    "        }",
+                    "    }",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Customer onboarding (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"phoneNumber\": \"0771234567\",\n  \"nic\": \"199512345678\",\n  \"dob\": \"1995-08-20\",\n  \"gender\": \"FEMALE\",\n  \"countryName\": \"Sri Lanka\",\n  \"profileImage\": null,\n  \"membershipType\": \"SILVER\",\n  \"username\": \"janedoe\",\n  \"password\": \"Pass123\"\n}" },
+            "url": "{{baseUrl}}/api/customers/onboarding",
+            "description": "Public. Creates Customer and User (role CUSTOMER). Required: firstName, membershipType, username, password. Optional: lastName, email, phoneNumber, nic, dob, gender, countryName, profileImage. After onboarding, log in via POST /api/customers/login with email and password."
+          }
+        },
+        {
+          "name": "Create customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"nic\": \"199012345678\",\n  \"dob\": \"1990-05-15\",\n  \"gender\": \"MALE\",\n  \"countryName\": \"Sri Lanka\",\n  \"profileImage\": null,\n  \"email\": \"john.doe@example.com\",\n  \"phoneNumber\": \"0771234567\",\n  \"membershipType\": \"SILVER\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/customers",
+            "description": "SYSADMIN or ADMIN only. Required: firstName, membershipType. Optional: lastName, nic, dob, gender, countryName, profileImage, email, phoneNumber, status (default ACTIVE)."
+          }
+        },
+        {
+          "name": "Get customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/customers/1",
+            "description": "SYSADMIN or ADMIN. Returns customer with countryName."
+          }
+        },
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/customers?search=&status=&membershipType=",
+            "description": "Optional: search (name, email, phone, NIC), status, membershipType (SILVER, GOLD, PLATINUM, DIAMOND)."
+          }
+        },
+        {
+          "name": "Update customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"nic\": \"199012345678\",\n  \"dob\": \"1990-05-15\",\n  \"gender\": \"MALE\",\n  \"countryName\": \"Sri Lanka\",\n  \"profileImage\": null,\n  \"email\": \"john.doe@example.com\",\n  \"phoneNumber\": \"0771234567\",\n  \"membershipType\": \"GOLD\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/api/customers/1"
+          }
+        },
+        {
+          "name": "Delete customer",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/customers/1",
+            "description": "Returns 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Provinces",
+      "item": [
+        {
+          "name": "Get all provinces",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/provinces?name=&description="
+          }
+        }
+      ]
+    },
+    {
+      "name": "Districts",
+      "item": [
+        {
+          "name": "Get districts by Province ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/provinces/1/districts?name="
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cities",
+      "item": [
+        {
+          "name": "Get cities by District ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/districts/1/cities?name="
+          }
+        }
+      ]
+    }
+  ]
+}

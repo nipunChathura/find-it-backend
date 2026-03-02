@@ -21,8 +21,8 @@ public class Customer extends AbstractEntity{
     private String dob;
     @Column(name = "gender")
     private String gender;
-    @Column(name = "country")
-    private String country;
+    @Column(name = "country_name", length = 100)
+    private String countryName;
     @Column(name = "profile_image")
     private String profileImage;
     @Column(name = "email", unique = true)

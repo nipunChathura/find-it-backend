@@ -19,6 +19,9 @@ public class User extends AbstractEntity {
     @Column(name = "username", nullable = false, unique = true, length = 100)
     private String username;
 
+    @Column(name = "email", length = 255)
+    private String email;
+
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
@@ -40,4 +43,10 @@ public class User extends AbstractEntity {
 
     @Column(name = "sub_merchant_id")
     private Long subMerchantId;
+
+    @Column(name = "customer_id")
+    private Long customerId;
+
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
 }

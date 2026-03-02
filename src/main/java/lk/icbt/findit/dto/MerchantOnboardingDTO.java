@@ -19,6 +19,14 @@ public class MerchantOnboardingDTO extends Response {
     private String merchantPhoneNumber;
     private MerchantType merchantType;
 
+    /** When set, onboarding is for a sub-merchant under this parent. */
+    private Long parentMerchantId;
+
+    private String username;
+    private String password;
+
     private Long merchantId;
+    private Long subMerchantId;
+    private String parentMerchantName;
     private String merchantStatus;
 }

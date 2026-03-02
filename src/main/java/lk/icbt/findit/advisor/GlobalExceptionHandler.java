@@ -1,5 +1,6 @@
 package lk.icbt.findit.advisor;
 
+import com.google.firebase.messaging.FirebaseMessagingException;
 import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.exception.InvalidRequestException;
@@ -59,6 +60,17 @@ public class GlobalExceptionHandler {
         response.setStatus(ResponseStatus.FAILURE.getStatus());
         response.setResponseCode(ResponseCodes.FORBIDDEN_NOT_SYSADMIN_CODE);
         response.setResponseMessage("Access denied. Only SYSADMIN can perform this operation.");
+        return response;
+    }
+
+    @ExceptionHandler(FirebaseMessagingException.class)
+    @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.BAD_GATEWAY)
+    @ResponseBody
+    public Response handleFirebaseMessagingException(FirebaseMessagingException ex) {
+        Response response = new Response();
+        response.setStatus(ResponseStatus.FAILURE.getStatus());
+        response.setResponseCode(ResponseCodes.FIREBASE_MESSAGING_ERROR_CODE);
+        response.setResponseMessage("Failed to send push notification: " + ex.getMessage());
         return response;
     }
 }

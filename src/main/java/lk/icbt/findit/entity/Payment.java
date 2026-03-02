@@ -27,4 +27,8 @@ public class Payment extends AbstractEntity{
     private String receiptImage;
     @Column(name = "status")
     private String status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outlet_id")
+    private Outlet outlet;
 }

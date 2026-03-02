@@ -44,7 +44,7 @@ public class SubMerchantController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasAnyRole('MERCHANT', 'SUBMERCHANT')")
     @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<SubMerchantResponse> changePassword(@Valid @RequestBody UserRequest request) {

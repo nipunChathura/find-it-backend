@@ -13,8 +13,10 @@ public class ResponseCodes {
     public static final String PHONE_NUMBER_VALIDATION_ERROR_CODE = "5205";
 
     public static final String USERNAME_ALREADY_EXISTS_CODE = "5301";
+    public static final String EMAIL_ALREADY_EXISTS_CODE = "5309";
     public static final String USER_NOT_FOUND_CODE = "5302";
     public static final String USER_ALREADY_APPROVED_CODE = "5303";
+    public static final String INVALID_USER_STATUS_CODE = "5310";
     public static final String FORBIDDEN_NOT_SYSADMIN_CODE = "5304";
     public static final String INVALID_CURRENT_PASSWORD_CODE = "5305";
     public static final String FORGOT_PASSWORD_NOT_PENDING_CODE = "5306";
@@ -33,4 +35,17 @@ public class ResponseCodes {
     public static final String NOT_A_MERCHANT_USER_CODE = "5506";
     public static final String NOT_A_SUB_MERCHANT_USER_CODE = "5507";
     public static final String NOT_MERCHANT_OR_SUB_MERCHANT_CODE = "5508";
+    public static final String CATEGORY_NOT_FOUND_CODE = "5601";
+    public static final String OUTLET_NOT_FOUND_CODE = "5701";
+    public static final String OUTLET_NOT_PENDING_CODE = "5702";
+    public static final String OUTLET_NOT_OWNED_BY_MERCHANT_CODE = "5703";
+    public static final String OUTLET_NOT_ELIGIBLE_FOR_PAYMENT_CODE = "5704";
+    public static final String OUTLET_PAYMENT_ALREADY_VERIFIED_CODE = "5705";
+    public static final String ITEM_NOT_FOUND_CODE = "5801";
+    public static final String DISCOUNT_NOT_FOUND_CODE = "5901";
+    public static final String PAYMENT_NOT_FOUND_CODE = "6001";
+    public static final String CUSTOMER_NOT_FOUND_CODE = "6101";
+    public static final String CUSTOMER_EMAIL_ALREADY_EXISTS_CODE = "6102";
+    public static final String NOTIFICATION_NOT_FOUND_CODE = "6301";
+    public static final String FIREBASE_MESSAGING_ERROR_CODE = "6302";
 }

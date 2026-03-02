@@ -19,4 +19,5 @@ public class LoginDTO extends Response {
     private String userStatus;
     private String isSystemUser;
     private Role role;
+    private String profileImageUrl;
 }

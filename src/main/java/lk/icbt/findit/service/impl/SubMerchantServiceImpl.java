@@ -6,19 +6,25 @@ import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.dto.SubMerchantAddDTO;
 import lk.icbt.findit.dto.SubMerchantApprovalDTO;
 import lk.icbt.findit.entity.Merchant;
+import lk.icbt.findit.entity.Outlet;
 import lk.icbt.findit.entity.Role;
 import lk.icbt.findit.entity.SubMerchant;
 import lk.icbt.findit.entity.User;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.MerchantRepository;
+import lk.icbt.findit.repository.OutletRepository;
 import lk.icbt.findit.repository.SubMerchantRepository;
 import lk.icbt.findit.repository.UserRepository;
+import lk.icbt.findit.response.SubMerchantWithOutletsResponse;
+import lk.icbt.findit.service.OutletService;
 import lk.icbt.findit.service.SubMerchantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ public class SubMerchantServiceImpl implements SubMerchantService {
 
     private final SubMerchantRepository subMerchantRepository;
     private final MerchantRepository merchantRepository;
+    private final OutletRepository outletRepository;
+    private final OutletService outletService;
     private final UserRepository userRepository;
 
     @Override
@@ -183,6 +191,29 @@ public class SubMerchantServiceImpl implements SubMerchantService {
             );
         }
         return updateSubMerchantStatus(subMerchantId, user.getMerchantId(), newStatus, inactiveReason);
+    }
+
+    @Override
+    public SubMerchantWithOutletsResponse getSubMerchantWithOutlets(Long subMerchantId) {
+        SubMerchant subMerchant = subMerchantRepository.findById(subMerchantId)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.SUB_MERCHANT_NOT_FOUND_CODE, "Sub-merchant not found"));
+        List<Outlet> outlets = outletRepository.findBySubMerchant_SubMerchantId(subMerchantId);
+        SubMerchantWithOutletsResponse response = new SubMerchantWithOutletsResponse();
+        response.setStatus(ResponseStatus.SUCCESS.getStatus());
+        response.setResponseCode(ResponseCodes.SUCCESS_CODE);
+        response.setSubMerchantId(subMerchant.getSubMerchantId());
+        response.setMerchantId(subMerchant.getMerchant() != null ? subMerchant.getMerchant().getMerchantId() : null);
+        response.setParentMerchantName(subMerchant.getMerchant() != null ? subMerchant.getMerchant().getMerchantName() : null);
+        response.setMerchantName(subMerchant.getMerchantName());
+        response.setMerchantEmail(subMerchant.getMerchantEmail());
+        response.setMerchantNic(subMerchant.getMerchantNic());
+        response.setMerchantProfileImage(subMerchant.getMerchantProfileImage());
+        response.setMerchantAddress(subMerchant.getMerchantAddress());
+        response.setMerchantPhoneNumber(subMerchant.getMerchantPhoneNumber());
+        response.setMerchantType(subMerchant.getMerchantType());
+        response.setSubMerchantStatus(subMerchant.getStatus());
+        response.setOutlets(outlets.stream().map(outletService::toListItemResponse).collect(Collectors.toList()));
+        return response;
     }
 
     private SubMerchantAddDTO mapToDto(SubMerchant subMerchant, String message) {

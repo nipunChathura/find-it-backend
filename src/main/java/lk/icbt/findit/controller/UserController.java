@@ -108,12 +108,14 @@ public class UserController {
             response.setUserStatus(login.getUserStatus());
             response.setIsSystemUser(login.getIsSystemUser());
             response.setRole(login.getRole());
+            response.setProfileImageUrl(login.getProfileImageUrl());
         } else if (result instanceof UserRegistrationDTO reg) {
             response.setUserId(reg.getUserId());
             response.setUsername(reg.getUsername());
             response.setUserStatus(reg.getUserStatus());
             response.setIsSystemUser(reg.getIsSystemUser());
             response.setRole(reg.getRole());
+            response.setProfileImageUrl(reg.getProfileImageUrl());
         } else if (result instanceof PasswordChangeDTO || result instanceof ForgetPasswordDTO || result instanceof ForgotPasswordApprovalDTO) {
             // Only status, responseCode, responseMessage set above
         }

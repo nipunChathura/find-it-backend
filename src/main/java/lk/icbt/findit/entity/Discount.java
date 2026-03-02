@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "discounts")
@@ -27,4 +29,7 @@ public class Discount extends AbstractEntity {
     private Date endDate;
     @Column(name = "status")
     private String status;
+
+    @OneToMany(mappedBy = "discount", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DiscountItem> discountItems = new ArrayList<>();
 }

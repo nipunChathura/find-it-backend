@@ -1,18 +1,34 @@
 package lk.icbt.findit.service;
 
+import lk.icbt.findit.dto.CustomerLoginDTO;
 import lk.icbt.findit.dto.ForgetPasswordDTO;
 import lk.icbt.findit.dto.ForgotPasswordApprovalDTO;
 import lk.icbt.findit.dto.LoginDTO;
 import lk.icbt.findit.dto.MerchantLoginDTO;
 import lk.icbt.findit.dto.PasswordChangeDTO;
+import lk.icbt.findit.dto.UserAddDTO;
 import lk.icbt.findit.dto.UserApprovalDTO;
+import lk.icbt.findit.dto.UserUpdateDTO;
 import lk.icbt.findit.dto.UserRegistrationDTO;
+import lk.icbt.findit.response.UserResponse;
+
+import java.util.List;
 
 public interface UserService {
 
     LoginDTO login(LoginDTO dto);
 
+    UserAddDTO addUser(UserAddDTO dto);
+
+    UserUpdateDTO updateUser(Long userId, UserUpdateDTO dto);
+
+    UserUpdateDTO updateUserStatus(Long userId, String status);
+
+    List<UserResponse> getAllUsers(String status, String search);
+
     MerchantLoginDTO loginMerchant(LoginDTO dto);
+
+    CustomerLoginDTO loginCustomer(String email, String password);
 
     UserRegistrationDTO register(UserRegistrationDTO dto);
 
