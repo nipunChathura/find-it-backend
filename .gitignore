@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Firebase service account (do not commit) ###
+find-it-8283f-firebase-adminsdk-fbsvc-44f6d583fc.json
+**/find-it-8283f-firebase-adminsdk-fbsvc-44f6d583fc.json
+
 ### STS ###
 .apt_generated
 .classpath
