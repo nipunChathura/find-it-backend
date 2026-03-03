@@ -14,6 +14,14 @@ public interface SubMerchantService {
 
     SubMerchantApprovalDTO approveSubMerchantForMerchant(String username, Long subMerchantId);
 
+    /**
+     * Reject a pending sub-merchant (set status to INACTIVE). Sends notification to merchant and sub-merchant users.
+     */
+    SubMerchantApprovalDTO rejectSubMerchant(Long subMerchantId, Long merchantId, String reason);
+
+    /** Reject sub-merchant by authenticated merchant (parent). */
+    SubMerchantApprovalDTO rejectSubMerchantForMerchant(String username, Long subMerchantId, String reason);
+
     SubMerchantApprovalDTO updateSubMerchantStatus(Long subMerchantId, Long merchantId, String newStatus, String inactiveReason);
 
     SubMerchantApprovalDTO updateSubMerchantStatusForMerchant(String username, Long subMerchantId, String newStatus, String inactiveReason);

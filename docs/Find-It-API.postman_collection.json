@@ -2,13 +2,41 @@
   "info": {
     "name": "Find It API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns itemIds and items (itemId, itemName). Optional filters: status, itemId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
+    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns itemIds and items (itemId, itemName). Optional filters: status, itemId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:9090/find-it" },
     { "key": "token", "value": "" }
   ],
   "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
+            "url": "{{baseUrl}}/api/auth/password/change",
+            "description": "Unified endpoint for any authenticated user (user, merchant, sub-merchant). User is resolved from JWT. Body: currentPassword, newPassword."
+          }
+        },
+        {
+          "name": "Forgot password (request reset)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_to_reset\"\n}" },
+            "url": "{{baseUrl}}/api/auth/password/forgot",
+            "description": "Public. Submit username to request a password reset. Admin approves via Users > Forgot password approval (SYSADMIN). Works for any user type (user, merchant, sub-merchant)."
+          }
+        }
+      ]
+    },
     {
       "name": "Users",
       "item": [
@@ -49,27 +77,6 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"SecurePass123\"\n}" },
             "url": "{{baseUrl}}/api/users/registration",
             "description": "Public. Registers a new user (username, password). Use Login to get token."
-          }
-        },
-        {
-          "name": "Change password",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
-            "url": "{{baseUrl}}/api/users/password/change"
-          }
-        },
-        {
-          "name": "Forgot password (request reset)",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_to_reset\"\n}" },
-            "url": "{{baseUrl}}/api/users/password/forgot"
           }
         },
         {
@@ -144,11 +151,25 @@
           }
         },
         {
+          "name": "Reject user (SYSADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"User documents are not valid\"\n}" },
+            "url": "{{baseUrl}}/api/admin/users/reject/1",
+            "description": "SYSADMIN only. Sets user status to INACTIVE. Optional JSON body with reason."
+          }
+        },
+        {
           "name": "Get all merchants",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/admin/merchants?name=&email=&username=&status=&merchantType="
+            "url": "{{baseUrl}}/api/admin/merchants?search=&status=&merchantType=",
+            "description": "SYSADMIN or ADMIN. Returns both main merchants and sub-merchants. Query params: search (matches name, email, or username in both tables), status (e.g. ACTIVE, PENDING), merchantType (e.g. FREE, SILVER, GOLD)."
           }
         },
         {
@@ -171,6 +192,19 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/admin/merchants/approval/1",
             "description": "SYSADMIN or ADMIN. Sets merchant status to ACTIVE and linked user(s) (role MERCHANT) to ACTIVE so the merchant can log in."
+          }
+        },
+        {
+          "name": "Reject merchant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Merchant application not approved\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants/reject/1",
+            "description": "SYSADMIN or ADMIN. Sets merchant status to INACTIVE and notifies merchant users. Optional JSON body with reason."
           }
         },
         {
@@ -208,6 +242,28 @@
             "body": { "mode": "raw", "raw": "{\n  \"merchantName\": \"Branch A\",\n  \"merchantEmail\": \"brancha@example.com\",\n  \"merchantAddress\": \"50 Branch Rd\",\n  \"merchantPhoneNumber\": \"0779876543\",\n  \"merchantType\": \"SILVER\"\n}" },
             "url": "{{baseUrl}}/api/admin/merchants/1/sub-merchants",
             "description": "Creates sub-merchant under merchant. Response includes sub-merchant with outlets list (empty for new)."
+          }
+        },
+        {
+          "name": "Approve sub-merchant (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/admin/merchants/1/sub-merchants/1/approval",
+            "description": "SYSADMIN or ADMIN. Approves sub-merchant under the given merchant and notifies merchant + sub-merchant users."
+          }
+        },
+        {
+          "name": "Reject sub-merchant (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Sub-merchant application not approved\"\n}" },
+            "url": "{{baseUrl}}/api/admin/merchants/1/sub-merchants/1/reject",
+            "description": "SYSADMIN or ADMIN. Sets sub-merchant status to INACTIVE and notifies merchant + sub-merchant users. Optional JSON body with reason."
           }
         },
         {
@@ -333,6 +389,19 @@
           }
         },
         {
+          "name": "Reject sub-merchant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Closing this branch\"\n}" },
+            "url": "{{baseUrl}}/api/merchants/sub-merchants/1/reject",
+            "description": "MERCHANT only. Sets sub-merchant status to INACTIVE for the current merchant. Optional JSON body with reason."
+          }
+        },
+        {
           "name": "Update sub-merchant status",
           "request": {
             "method": "PUT",
@@ -342,27 +411,6 @@
             ],
             "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\",\n  \"inactiveReason\": \"\"\n}" },
             "url": "{{baseUrl}}/api/merchants/sub-merchants/1/status"
-          }
-        },
-        {
-          "name": "Change password",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
-            "url": "{{baseUrl}}/api/merchants/password/change"
-          }
-        },
-        {
-          "name": "Forgot password",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"username\": \"store@example.com\"\n}" },
-            "url": "{{baseUrl}}/api/merchants/password/forgot"
           }
         }
       ]
@@ -380,27 +428,6 @@
             ],
             "body": { "mode": "raw", "raw": "{\n  \"merchantId\": 1,\n  \"merchantName\": \"Branch Manager\",\n  \"merchantEmail\": \"branch@example.com\",\n  \"merchantNic\": \"199512345678\",\n  \"merchantProfileImage\": null,\n  \"merchantAddress\": \"50 Branch Road, Kandy\",\n  \"merchantPhoneNumber\": \"0772223344\",\n  \"merchantType\": \"SILVER\"\n}" },
             "url": "{{baseUrl}}/api/sub-merchants"
-          }
-        },
-        {
-          "name": "Change password",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}" },
-            "url": "{{baseUrl}}/api/sub-merchants/password/change"
-          }
-        },
-        {
-          "name": "Forgot password",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"username\": \"sub_merchant_email@example.com\"\n}" },
-            "url": "{{baseUrl}}/api/sub-merchants/password/forgot"
           }
         }
       ]

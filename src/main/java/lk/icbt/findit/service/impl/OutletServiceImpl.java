@@ -11,9 +11,13 @@ import lk.icbt.findit.response.GetAllOutletsResponse;
 import lk.icbt.findit.response.OutletListItemResponse;
 import lk.icbt.findit.response.OutletListResponse;
 import lk.icbt.findit.response.OutletStatusResponse;
+import lk.icbt.findit.service.NotificationService;
 import lk.icbt.findit.service.OutletScheduleService;
 import lk.icbt.findit.service.OutletService;
+import lk.icbt.findit.service.ServiceLoggingHelper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OutletServiceImpl implements OutletService {
 
+    private static final Logger log = LoggerFactory.getLogger(OutletServiceImpl.class);
+    private static final String SERVICE_NAME = "OutletService";
+
     private final OutletRepository outletRepository;
     private final MerchantRepository merchantRepository;
     private final SubMerchantRepository subMerchantRepository;
@@ -35,14 +42,17 @@ public class OutletServiceImpl implements OutletService {
     private final DistrictRepository districtRepository;
     private final CityRepository cityRepository;
     private final OutletScheduleService outletScheduleService;
+    private final NotificationService notificationService;
 
     @Override
     public List<OutletListResponse> listOutlets(String name, String status) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "listOutlets", "name", name, "status", status);
         String searchParam = (name != null && !name.isBlank()) ? name.trim() : "";
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : "";
+        ServiceLoggingHelper.logGettingData(log, "Outlets with filters", "search", searchParam, "status", statusParam);
         List<Outlet> list = outletRepository.findAllWithFilters(searchParam, statusParam, null);
         LocalDateTime now = LocalDateTime.now();
-        return list.stream().map(o -> {
+        List<OutletListResponse> result = list.stream().map(o -> {
             String currentStatus = OutletStatusResponse.STATUS_CLOSED;
             try {
                 currentStatus = outletScheduleService.getOutletStatus(o.getOutletId(), now).getStatus();
@@ -54,24 +64,35 @@ public class OutletServiceImpl implements OutletService {
                     .currentStatus(currentStatus)
                     .build();
         }).collect(Collectors.toList());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "listOutlets", "count", result.size());
+        return result;
     }
 
     @Override
     @Transactional
     public OutletAddDTO addOutlet(OutletAddDTO dto, String authenticatedUsername) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "addOutlet", "merchantId", dto.getMerchantId(), "outletName", dto.getOutletName());
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id", "merchantId", dto.getMerchantId());
         Merchant merchant = merchantRepository.findById(dto.getMerchantId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.MERCHANT_NOT_FOUND_CODE,
-                        "Merchant not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_FOUND_CODE,
+                            "Merchant not found"
+                    );
+                });
 
         SubMerchant subMerchant = null;
         if (dto.getSubMerchantId() != null) {
+            ServiceLoggingHelper.logGettingData(log, "SubMerchant by id and merchantId", "subMerchantId", dto.getSubMerchantId());
             subMerchant = subMerchantRepository.findBySubMerchantIdAndMerchant_MerchantId(dto.getSubMerchantId(), merchant.getMerchantId())
-                    .orElseThrow(() -> new InvalidRequestException(
-                            ResponseCodes.SUB_MERCHANT_NOT_FOUND_CODE,
-                            "Sub-merchant not found or does not belong to this merchant"
-                    ));
+                    .orElseThrow(() -> {
+                        ServiceLoggingHelper.logValidationError(log, ResponseCodes.SUB_MERCHANT_NOT_FOUND_CODE, "Sub-merchant not found or does not belong to this merchant");
+                        return new InvalidRequestException(
+                                ResponseCodes.SUB_MERCHANT_NOT_FOUND_CODE,
+                                "Sub-merchant not found or does not belong to this merchant"
+                        );
+                    });
         }
 
         String outletStatus = Constants.OUTLET_PENDING_STATUS;
@@ -91,6 +112,10 @@ public class OutletServiceImpl implements OutletService {
         outlet.setSubscriptionValidUntil(addMonths(now, Constants.OUTLET_FREE_TRIAL_MONTHS));
 
         Outlet saved = outletRepository.save(outlet);
+        if (Constants.OUTLET_PENDING_STATUS.equals(outletStatus)) {
+            notificationService.notifyAdminsOfPendingItem("Outlet", saved.getOutletName(), "Outlet pending approval.");
+        }
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "addOutlet", "outletId", saved.getOutletId());
         return mapToDto(saved, "Outlet added successfully. Status: " + outletStatus + ". Free trial until " + outlet.getSubscriptionValidUntil() + ".");
     }
 
@@ -323,19 +348,6 @@ public class OutletServiceImpl implements OutletService {
             cityRepository.findById(dto.getCityId()).ifPresent(outlet::setCity);
         } else {
             outlet.setCity(null);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void expireOutletsWithEndedSubscription() {
-        Date today = new Date();
-        List<String> statuses = List.of(Constants.OUTLET_ACTIVE_STATUS, Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
-        List<Outlet> toExpire = outletRepository.findByStatusInAndSubscriptionValidUntilBefore(statuses, today);
-        for (Outlet o : toExpire) {
-            o.setStatus(Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS);
-            o.setModifiedDatetime(today);
-            outletRepository.save(o);
         }
     }
 

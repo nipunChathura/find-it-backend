@@ -16,12 +16,17 @@ import lk.icbt.findit.repository.OutletRepository;
 import lk.icbt.findit.repository.SubMerchantRepository;
 import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.response.SubMerchantWithOutletsResponse;
+import lk.icbt.findit.service.NotificationService;
 import lk.icbt.findit.service.OutletService;
+import lk.icbt.findit.service.ServiceLoggingHelper;
 import lk.icbt.findit.service.SubMerchantService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,27 +35,38 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubMerchantServiceImpl implements SubMerchantService {
 
+    private static final Logger log = LoggerFactory.getLogger(SubMerchantServiceImpl.class);
+    private static final String SERVICE_NAME = "SubMerchantService";
+
     private final SubMerchantRepository subMerchantRepository;
     private final MerchantRepository merchantRepository;
     private final OutletRepository outletRepository;
     private final OutletService outletService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public SubMerchantAddDTO addSubMerchant(SubMerchantAddDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "addSubMerchant", "merchantId", dto.getMerchantId(), "email", dto.getMerchantEmail());
         if (dto.getMerchantId() == null) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_ID_REQUIRED_CODE, "Merchant ID is required");
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_ID_REQUIRED_CODE,
                     "Merchant ID is required"
             );
         }
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id", "merchantId", dto.getMerchantId());
         Merchant merchant = merchantRepository.findById(dto.getMerchantId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.MERCHANT_NOT_FOUND_CODE,
-                        "Merchant not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_FOUND_CODE,
+                            "Merchant not found"
+                    );
+                });
         if (subMerchantRepository.existsByMerchantEmail(dto.getMerchantEmail().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.SUB_MERCHANT_EMAIL_ALREADY_EXISTS_CODE, "Sub-merchant with this email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.SUB_MERCHANT_EMAIL_ALREADY_EXISTS_CODE,
                     "Sub-merchant with this email already exists"
@@ -74,15 +90,20 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         subMerchant.setVersion(1);
 
         SubMerchant saved = subMerchantRepository.save(subMerchant);
+        if (Constants.MERCHANT_PENDING_STATUS.equals(saved.getStatus())) {
+            notificationService.notifyAdminsOfPendingItem("Sub-merchant", saved.getMerchantName(), "Sub-merchant pending approval.");
+        }
         String message = dto.isActiveOnCreate()
                 ? "Sub-merchant added successfully. Status: ACTIVE."
                 : "Sub-merchant added successfully. Pending approval.";
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "addSubMerchant", "subMerchantId", saved.getSubMerchantId());
         return mapToDto(saved, message);
     }
 
     @Override
     @Transactional
     public SubMerchantAddDTO addSubMerchantWithAuth(SubMerchantAddDTO dto, String authenticatedUsername) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "addSubMerchantWithAuth", "merchantId", dto.getMerchantId(), "username", authenticatedUsername);
         if (dto.getMerchantId() == null) {
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_ID_REQUIRED_CODE,
@@ -127,7 +148,24 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         subMerchant.setStatus(Constants.MERCHANT_ACTIVE_STATUS);
         subMerchant.setModifiedDatetime(new Date());
         SubMerchant saved = subMerchantRepository.save(subMerchant);
+
+        List<Long> userIdsToNotify = new ArrayList<>();
+        Long parentMerchantId = saved.getMerchant() != null ? saved.getMerchant().getMerchantId() : null;
+        if (parentMerchantId != null) {
+            userIdsToNotify.addAll(userRepository.findByMerchantIdAndRole(parentMerchantId, Role.MERCHANT).stream().map(User::getUserId).toList());
+        }
+        userIdsToNotify.addAll(userRepository.findBySubMerchantIdAndRole(saved.getSubMerchantId(), Role.SUBMERCHANT).stream().map(User::getUserId).toList());
+        notificationService.notifyUserIds(userIdsToNotify, "SUB_MERCHANT_APPROVAL",
+                "Sub-merchant approved",
+                "Sub-merchant \"" + saved.getMerchantName() + "\" has been approved successfully.");
+
         return mapToApprovalDto(saved, "Sub-merchant approved successfully.");
+    }
+
+    @Override
+    @Transactional
+    public SubMerchantApprovalDTO rejectSubMerchant(Long subMerchantId, Long merchantId, String reason) {
+        return updateSubMerchantStatus(subMerchantId, merchantId, Constants.MERCHANT_INACTIVE_STATUS, reason);
     }
 
     @Override
@@ -152,6 +190,26 @@ public class SubMerchantServiceImpl implements SubMerchantService {
 
     @Override
     @Transactional
+    public SubMerchantApprovalDTO rejectSubMerchantForMerchant(String username, Long subMerchantId, String reason) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        if (user.getMerchantId() == null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.MERCHANT_NOT_LINKED_CODE,
+                    "User is not linked to a merchant"
+            );
+        }
+        return rejectSubMerchant(subMerchantId, user.getMerchantId(), reason);
+    }
+
+    @Override
+    @Transactional
     public SubMerchantApprovalDTO updateSubMerchantStatus(Long subMerchantId, Long merchantId, String newStatus, String inactiveReason) {
         SubMerchant subMerchant = subMerchantRepository.findBySubMerchantIdAndMerchant_MerchantId(subMerchantId, merchantId)
                 .orElseThrow(() -> new InvalidRequestException(
@@ -170,6 +228,20 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         subMerchant.setInactiveReason(Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus) ? inactiveReason : null);
         subMerchant.setModifiedDatetime(new Date());
         SubMerchant saved = subMerchantRepository.save(subMerchant);
+
+        if (Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus)) {
+            List<Long> userIdsToNotify = new ArrayList<>();
+            Long parentMerchantId = saved.getMerchant() != null ? saved.getMerchant().getMerchantId() : null;
+            if (parentMerchantId != null) {
+                userIdsToNotify.addAll(userRepository.findByMerchantIdAndRole(parentMerchantId, Role.MERCHANT).stream().map(User::getUserId).toList());
+            }
+            userIdsToNotify.addAll(userRepository.findBySubMerchantIdAndRole(saved.getSubMerchantId(), Role.SUBMERCHANT).stream().map(User::getUserId).toList());
+            String reason = (inactiveReason != null && !inactiveReason.isBlank()) ? " Reason: " + inactiveReason : ".";
+            notificationService.notifyUserIds(userIdsToNotify, "SUB_MERCHANT_REJECTED",
+                    "Sub-merchant not approved",
+                    "Sub-merchant \"" + saved.getMerchantName() + "\" has been set to inactive." + reason);
+        }
+
         return mapToApprovalDto(saved, "Sub-merchant status updated successfully.");
     }
 

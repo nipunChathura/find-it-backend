@@ -55,11 +55,6 @@ public interface OutletService {
     OutletAddDTO verifyPayment(Long outletId);
 
     /**
-     * Expire outlets whose subscription valid period has passed (status → EXPIRED_SUBSCRIPTION). Called by scheduler.
-     */
-    void expireOutletsWithEndedSubscription();
-
-    /**
      * Map an Outlet entity to OutletListItemResponse (for use in merchant/sub-merchant with-outlets responses).
      */
     OutletListItemResponse toListItemResponse(Outlet outlet);

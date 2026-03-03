@@ -16,7 +16,10 @@ import lk.icbt.findit.response.CustomerListItemResponse;
 import lk.icbt.findit.response.CustomerOnboardingResponse;
 import lk.icbt.findit.response.CustomerResponse;
 import lk.icbt.findit.service.CustomerService;
+import lk.icbt.findit.service.ServiceLoggingHelper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
+    private static final String SERVICE_NAME = "CustomerService";
+
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -36,12 +42,16 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public CustomerOnboardingResponse onboard(CustomerOnboardingRequest request) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "onboard", "username", request.getUsername(), "email", request.getEmail());
         if (userRepository.existsByUsername(request.getUsername().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
             throw new InvalidRequestException(ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
         }
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            ServiceLoggingHelper.logGettingData(log, "Customer by email", "email", request.getEmail());
             customerRepository.findByEmail(request.getEmail().trim().toLowerCase())
                     .ifPresent(c -> {
+                        ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                         throw new InvalidRequestException(ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                     });
         }
@@ -85,15 +95,19 @@ public class CustomerServiceImpl implements CustomerService {
         response.setResponseMessage("Customer onboarding successful. You can log in with your username and password.");
         response.setCustomerId(savedCustomer.getCustomerId());
         response.setUsername(user.getUsername());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "onboard", "customerId", savedCustomer.getCustomerId());
         return response;
     }
 
     @Override
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "create", "email", request.getEmail());
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            ServiceLoggingHelper.logGettingData(log, "Customer by email", "email", request.getEmail());
             customerRepository.findByEmail(request.getEmail().trim())
                     .ifPresent(c -> {
+                        ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                         throw new InvalidRequestException(ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                     });
         }
@@ -110,34 +124,49 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setVersion(1);
 
         Customer saved = customerRepository.save(customer);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "create", "customerId", saved.getCustomerId());
         return toResponse(saved, "Customer created successfully.");
     }
 
     @Override
     public CustomerResponse getById(Long customerId) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "getById", "customerId", customerId);
+        ServiceLoggingHelper.logGettingData(log, "Customer by id", "customerId", customerId);
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found"));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                    return new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                });
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getById", "customerId", customerId);
         return toResponse(customer, null);
     }
 
     @Override
     public List<CustomerListItemResponse> list(String search, String status, MembershipType membershipType) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "list", "search", search, "status", status);
         String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : null;
         List<Customer> list = customerRepository.search(searchParam, statusParam, membershipType);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "list", "count", list.size());
         return list.stream().map(this::toListItem).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public CustomerResponse update(Long customerId, CustomerRequest request) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "update", "customerId", customerId);
+        ServiceLoggingHelper.logGettingData(log, "Customer by id", "customerId", customerId);
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found"));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                    return new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                });
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             customerRepository.findByEmail(request.getEmail().trim())
                     .filter(c -> !c.getCustomerId().equals(customerId))
                     .ifPresent(c -> {
+                        ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                         throw new InvalidRequestException(ResponseCodes.CUSTOMER_EMAIL_ALREADY_EXISTS_CODE, "Customer with this email already exists");
                     });
         }
@@ -149,15 +178,22 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setModifiedDatetime(new Date());
 
         Customer saved = customerRepository.save(customer);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "update", "customerId", saved.getCustomerId());
         return toResponse(saved, "Customer updated successfully.");
     }
 
     @Override
     @Transactional
     public void delete(Long customerId) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "delete", "customerId", customerId);
+        ServiceLoggingHelper.logGettingData(log, "Customer by id", "customerId", customerId);
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found"));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                    return new InvalidRequestException(ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer not found");
+                });
         customerRepository.delete(customer);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "delete", "customerId", customerId);
     }
 
     private static String trim(String s) {

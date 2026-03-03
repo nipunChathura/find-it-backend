@@ -7,8 +7,11 @@ import com.google.firebase.messaging.Message;
 import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.entity.Notification;
+import lk.icbt.findit.entity.Role;
+import lk.icbt.findit.entity.User;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.NotificationRepository;
+import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.request.SendNotificationRequest;
 import lk.icbt.findit.response.NotificationResponse;
 import lk.icbt.findit.service.NotificationService;
@@ -25,7 +28,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
+    private static final String PENDING_ADMIN_TYPE = "PENDING_APPROVAL";
+
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -86,6 +92,38 @@ public class NotificationServiceImpl implements NotificationService {
         }
         List<Notification> list = notificationRepository.findByUserIdAndTypeOrderByCreatedAtDesc(userId, type.trim());
         return list.stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public void notifyUserIds(List<Long> userIds, String type, String title, String body) {
+        if (userIds == null || userIds.isEmpty()) return;
+        for (Long userId : userIds) {
+            try {
+                saveNotification(userId, type != null ? type : "NOTIFICATION", title, body);
+                log.debug("Notified userId={} type={}", userId, type);
+            } catch (Exception e) {
+                log.warn("Failed to notify userId={} type={}: {}", userId, type, e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void notifyAdminsOfPendingItem(String itemType, String itemName, String detail) {
+        List<User> admins = userRepository.findByRoleIn(List.of(Role.SYSADMIN, Role.ADMIN));
+        if (admins.isEmpty()) {
+            log.debug("No admin users found to notify of PENDING item: {} - {}", itemType, itemName);
+            return;
+        }
+        String title = "Pending: " + itemType + " - " + (itemName != null ? itemName : "");
+        String body = detail != null && !detail.isBlank() ? detail : (itemType + " is pending approval.");
+        for (User admin : admins) {
+            try {
+                saveNotification(admin.getUserId(), PENDING_ADMIN_TYPE, title, body);
+                log.debug("Notified admin userId={} of PENDING item: {} - {}", admin.getUserId(), itemType, itemName);
+            } catch (Exception e) {
+                log.warn("Failed to notify admin userId={} of PENDING item {}: {}", admin.getUserId(), itemType, e.getMessage());
+            }
+        }
     }
 
     @Override

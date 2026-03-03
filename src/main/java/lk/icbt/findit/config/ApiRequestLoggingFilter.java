@@ -41,7 +41,14 @@ public class ApiRequestLoggingFilter extends OncePerRequestFilter {
         } finally {
             int status = response.getStatus();
             long durationMs = System.currentTimeMillis() - startTime;
-            log.info("API {} {}{} -> {} ({} ms)", method, uri, query, status, durationMs);
+            String logLine = String.format("API %s %s%s -> %d (%d ms)", method, uri, query, status, durationMs);
+            if (status >= 500) {
+                log.error("{}", logLine);
+            } else if (status >= 400) {
+                log.warn("{}", logLine);
+            } else {
+                log.info("{}", logLine);
+            }
         }
     }
 }

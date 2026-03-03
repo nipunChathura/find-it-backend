@@ -19,16 +19,12 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
     List<Merchant> findByStatusNot(String status);
 
     @Query("SELECT m FROM Merchant m WHERE m.status != :excludedStatus "
-            + "AND (:name = '' OR LOWER(m.merchantName) LIKE LOWER(CONCAT('%', :name, '%'))) "
-            + "AND (:email = '' OR LOWER(m.merchantEmail) LIKE LOWER(CONCAT('%', :email, '%'))) "
-            + "AND (:username = '' OR LOWER(COALESCE(m.username, '')) LIKE LOWER(CONCAT('%', :username, '%'))) "
+            + "AND (:search = '' OR LOWER(m.merchantName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(m.merchantEmail) LIKE LOWER(CONCAT('%', :search, '%'))) "
             + "AND (:status = '' OR m.status = :status) "
             + "AND (:merchantType IS NULL OR m.merchantType = :merchantType)")
     List<Merchant> findAllWithFilters(
             @Param("excludedStatus") String excludedStatus,
-            @Param("name") String name,
-            @Param("email") String email,
-            @Param("username") String username,
+            @Param("search") String search,
             @Param("status") String status,
             @Param("merchantType") MerchantType merchantType);
 }

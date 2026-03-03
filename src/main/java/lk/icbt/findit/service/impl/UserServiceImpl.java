@@ -19,8 +19,12 @@ import lk.icbt.findit.dto.UserRegistrationDTO;
 import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.response.UserResponse;
 import lk.icbt.findit.security.JwtService;
+import lk.icbt.findit.service.NotificationService;
+import lk.icbt.findit.service.ServiceLoggingHelper;
 import lk.icbt.findit.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,34 +41,45 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final String SERVICE_NAME = "UserService";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public LoginDTO login(LoginDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "login", "username", dto.getUsername());
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
             if (auth == null || !auth.isAuthenticated()) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid username or password");
                 throw new InvalidRequestException(
                         ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
                         "Invalid username or password"
                 );
             }
         } catch (BadCredentialsException e) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid username or password");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
                     "Invalid username or password"
             );
         }
+        ServiceLoggingHelper.logGettingData(log, "User by username", "username", dto.getUsername());
         User user = userRepository.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
         user.setLastLogin(new Date());
         if (Constants.USER_APPROVED_STATUS.equals(user.getStatus())) {
@@ -83,24 +98,31 @@ public class UserServiceImpl implements UserService {
         result.setIsSystemUser(user.getIsSystemUser());
         result.setRole(user.getRole());
         result.setProfileImageUrl(user.getProfileImageUrl());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "login", "userId", user.getUserId());
         return result;
     }
 
     @Override
     @Transactional
     public MerchantLoginDTO loginMerchant(LoginDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "loginMerchant", "username", dto.getUsername());
         LoginDTO loginResult = login(dto);
         if (loginResult.getRole() != Role.MERCHANT && loginResult.getRole() != Role.SUBMERCHANT) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.NOT_MERCHANT_OR_SUB_MERCHANT_CODE, "Only merchant and sub-merchant users can use this login");
             throw new InvalidRequestException(
                     ResponseCodes.NOT_MERCHANT_OR_SUB_MERCHANT_CODE,
                     "Only merchant and sub-merchant users can use this login"
             );
         }
+        ServiceLoggingHelper.logGettingData(log, "User by username", "username", loginResult.getUsername());
         User user = userRepository.findByUsername(loginResult.getUsername())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         MerchantLoginDTO result = new MerchantLoginDTO();
         result.setStatus(loginResult.getStatus());
         result.setResponseCode(loginResult.getResponseCode());
@@ -112,30 +134,39 @@ public class UserServiceImpl implements UserService {
         result.setRole(loginResult.getRole());
         result.setMerchantId(user.getMerchantId());
         result.setSubMerchantId(user.getSubMerchantId());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginMerchant", "userId", user.getUserId());
         return result;
     }
 
     @Override
     @Transactional
     public CustomerLoginDTO loginCustomer(String email, String password) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "loginCustomer", "email", email != null ? email : "null");
         if (email == null || email.isBlank()) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid email or password");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
                     "Invalid email or password"
             );
         }
+        ServiceLoggingHelper.logGettingData(log, "User by email and role CUSTOMER", "email", email);
         User user = userRepository.findByEmailIgnoreCaseAndRole(email.trim().toLowerCase(), Role.CUSTOMER)
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
-                        "Invalid email or password"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid email or password");
+                    return new InvalidRequestException(
+                            ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
+                            "Invalid email or password"
+                    );
+                });
         if (!passwordEncoder.matches(password, user.getPassword())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid email or password");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
                     "Invalid email or password"
             );
         }
         if (Constants.USER_DELETED_STATUS.equals(user.getStatus())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE, "Invalid email or password");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_LOGIN_CREDENTIALS_CODE,
                     "Invalid email or password"
@@ -160,13 +191,16 @@ public class UserServiceImpl implements UserService {
         result.setUserStatus(user.getStatus());
         result.setRole(user.getRole());
         result.setCustomerId(user.getCustomerId());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginCustomer", "userId", user.getUserId());
         return result;
     }
 
     @Override
     @Transactional
     public UserAddDTO addUser(UserAddDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "addUser", "username", dto.getUsername());
         if (userRepository.existsByUsername(dto.getUsername().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
             throw new InvalidRequestException(
                     ResponseCodes.USERNAME_ALREADY_EXISTS_CODE,
                     "Username already exists"
@@ -174,6 +208,7 @@ public class UserServiceImpl implements UserService {
         }
         if (dto.getEmail() != null && !dto.getEmail().isBlank()
                 && userRepository.existsByEmail(dto.getEmail().trim().toLowerCase())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.EMAIL_ALREADY_EXISTS_CODE, "Email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.EMAIL_ALREADY_EXISTS_CODE,
                     "Email already exists"
@@ -211,21 +246,31 @@ public class UserServiceImpl implements UserService {
         result.setRole(saved.getRole());
         result.setMerchantId(saved.getMerchantId());
         result.setSubMerchantId(saved.getSubMerchantId());
+        if (Constants.USER_PENDING_STATUS.equals(saved.getStatus())) {
+            notificationService.notifyAdminsOfPendingItem("User", saved.getUsername(), "New user pending approval.");
+        }
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "addUser", "userId", saved.getUserId());
         return result;
     }
 
     @Override
     @Transactional
     public UserUpdateDTO updateUser(Long userId, UserUpdateDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "updateUser", "userId", userId);
+        ServiceLoggingHelper.logGettingData(log, "User by id", "userId", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
 
         if (dto.getUsername() != null && !dto.getUsername().isBlank()) {
             String newUsername = dto.getUsername().trim();
             if (!newUsername.equals(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
                 throw new InvalidRequestException(
                         ResponseCodes.USERNAME_ALREADY_EXISTS_CODE,
                         "Username already exists"
@@ -236,6 +281,7 @@ public class UserServiceImpl implements UserService {
         if (dto.getEmail() != null) {
             String newEmail = dto.getEmail().isBlank() ? null : dto.getEmail().trim().toLowerCase();
             if (newEmail != null && !newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.EMAIL_ALREADY_EXISTS_CODE, "Email already exists");
                 throw new InvalidRequestException(
                         ResponseCodes.EMAIL_ALREADY_EXISTS_CODE,
                         "Email already exists"
@@ -275,23 +321,30 @@ public class UserServiceImpl implements UserService {
         result.setRole(saved.getRole());
         result.setMerchantId(saved.getMerchantId());
         result.setSubMerchantId(saved.getSubMerchantId());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "updateUser", "userId", saved.getUserId());
         return result;
     }
 
     @Override
     @Transactional
     public UserUpdateDTO updateUserStatus(Long userId, String status) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "updateUserStatus", "userId", userId, "status", status);
+        ServiceLoggingHelper.logGettingData(log, "User by id", "userId", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         String newStatus = status != null ? status.trim() : null;
         if (newStatus == null || !(Constants.USER_ACTIVE_STATUS.equals(newStatus)
                 || Constants.USER_INACTIVE_STATUS.equals(newStatus)
                 || Constants.USER_PENDING_STATUS.equals(newStatus)
                 || Constants.USER_APPROVED_STATUS.equals(newStatus)
                 || Constants.USER_DELETED_STATUS.equals(newStatus))) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_USER_STATUS_CODE, "Status must be ACTIVE, INACTIVE, PENDING, APPROVED, or DELETED");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_USER_STATUS_CODE,
                     "Status must be ACTIVE, INACTIVE, PENDING, APPROVED, or DELETED"
@@ -313,15 +366,24 @@ public class UserServiceImpl implements UserService {
         result.setRole(saved.getRole());
         result.setMerchantId(saved.getMerchantId());
         result.setSubMerchantId(saved.getSubMerchantId());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "updateUserStatus", "userId", saved.getUserId());
         return result;
     }
 
     @Override
+    @Transactional
+    public UserUpdateDTO rejectUser(Long userId, String reason) {
+        return updateUserStatus(userId, Constants.USER_INACTIVE_STATUS);
+    }
+
+    @Override
     public List<UserResponse> getAllUsers(String status, String search) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "getAllUsers", "status", status, "search", search);
         String statusFilter = (status != null && !status.isBlank()) ? status.trim() : null;
         String searchTerm = (search != null && !search.isBlank()) ? search.trim().toLowerCase() : null;
 
-        return userRepository.findAll().stream()
+        List<UserResponse> list = userRepository.findAll().stream()
+                .filter(user -> !Constants.USER_DELETED_STATUS.equals(user.getStatus()))
                 .filter(user -> user.getRole() != Role.MERCHANT && user.getRole() != Role.SUBMERCHANT)
                 .filter(user -> statusFilter == null
                         || (user.getStatus() != null && user.getStatus().equalsIgnoreCase(statusFilter)))
@@ -330,6 +392,8 @@ public class UserServiceImpl implements UserService {
                         || (user.getEmail() != null && user.getEmail().toLowerCase().contains(searchTerm)))
                 .map(this::mapUserToResponse)
                 .collect(Collectors.toList());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getAllUsers", "count", list.size());
+        return list;
     }
 
     private UserResponse mapUserToResponse(User user) {
@@ -350,7 +414,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserRegistrationDTO register(UserRegistrationDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "register", "username", dto.getUsername());
         if (userRepository.existsByUsername(dto.getUsername())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
             throw new InvalidRequestException(
                     ResponseCodes.USERNAME_ALREADY_EXISTS_CODE,
                     "Username already exists"
@@ -378,6 +444,10 @@ public class UserServiceImpl implements UserService {
         user.setVersion(1);
 
         User saved = userRepository.save(user);
+        if (Constants.USER_PENDING_STATUS.equals(saved.getStatus())) {
+            notificationService.notifyAdminsOfPendingItem("User", saved.getUsername(), "New registration pending approval.");
+        }
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "register", "userId", saved.getUserId());
         return mapToResultDto(saved, "Registration successful");
     }
 
@@ -398,13 +468,19 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserApprovalDTO approveUser(UserApprovalDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "approveUser", "userId", dto.getUserId());
+        ServiceLoggingHelper.logGettingData(log, "User by id", "userId", dto.getUserId());
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
 
         if (Constants.USER_APPROVED_STATUS.equals(user.getStatus())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_ALREADY_APPROVED_CODE, "User is already approved");
             throw new InvalidRequestException(
                     ResponseCodes.USER_ALREADY_APPROVED_CODE,
                     "User is already approved"
@@ -431,12 +507,18 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public PasswordChangeDTO changePassword(PasswordChangeDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "changePassword", "username", dto.getUsername());
+        ServiceLoggingHelper.logGettingData(log, "User by username", "username", dto.getUsername());
         User user = userRepository.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.INVALID_CURRENT_PASSWORD_CODE, "Current password is incorrect");
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_CURRENT_PASSWORD_CODE,
                     "Current password is incorrect"
@@ -449,66 +531,25 @@ public class UserServiceImpl implements UserService {
         result.setStatus(ResponseStatus.SUCCESS.getStatus());
         result.setResponseCode(ResponseCodes.SUCCESS_CODE);
         result.setResponseMessage("Password changed successfully");
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "changePassword", "username", dto.getUsername());
         return result;
     }
 
     @Override
     @Transactional
-    public PasswordChangeDTO changePasswordForMerchant(String username, String currentPassword, String newPassword) {
-        if (username == null || username.isBlank()) {
-            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
-        }
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
-        if (user.getMerchantId() == null || user.getSubMerchantId() != null) {
-            throw new InvalidRequestException(
-                    ResponseCodes.NOT_A_MERCHANT_USER_CODE,
-                    "Not a merchant user. Use merchant password APIs only for main merchant accounts."
-            );
-        }
-        PasswordChangeDTO dto = new PasswordChangeDTO();
-        dto.setUsername(username);
-        dto.setCurrentPassword(currentPassword);
-        dto.setNewPassword(newPassword);
-        return changePassword(dto);
-    }
-
-    @Override
-    @Transactional
-    public PasswordChangeDTO changePasswordForSubMerchant(String username, String currentPassword, String newPassword) {
-        if (username == null || username.isBlank()) {
-            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
-        }
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
-        if (user.getSubMerchantId() == null) {
-            throw new InvalidRequestException(
-                    ResponseCodes.NOT_A_SUB_MERCHANT_USER_CODE,
-                    "Not a sub-merchant user. Use sub-merchant password APIs only for sub-merchant accounts."
-            );
-        }
-        PasswordChangeDTO dto = new PasswordChangeDTO();
-        dto.setUsername(username);
-        dto.setCurrentPassword(currentPassword);
-        dto.setNewPassword(newPassword);
-        return changePassword(dto);
-    }
-
-    @Override
-    @Transactional
     public ForgetPasswordDTO forgetPassword(ForgetPasswordDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "forgetPassword", "username", dto.getUsername());
+        ServiceLoggingHelper.logGettingData(log, "User by username", "username", dto.getUsername());
         User user = userRepository.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         if (Constants.DB_TRUE.equals(user.getIsSystemUser())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.SYSTEM_USER_FORGOT_PASSWORD_NOT_ALLOWED_CODE, "System user cannot use forgot password flow");
             throw new InvalidRequestException(
                     ResponseCodes.SYSTEM_USER_FORGOT_PASSWORD_NOT_ALLOWED_CODE,
                     "System user cannot use forgot password flow"
@@ -521,68 +562,32 @@ public class UserServiceImpl implements UserService {
         result.setStatus(ResponseStatus.SUCCESS.getStatus());
         result.setResponseCode(ResponseCodes.SUCCESS_CODE);
         result.setResponseMessage("Forgot password request submitted. Wait for admin approval.");
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "forgetPassword", "username", dto.getUsername());
         return result;
     }
 
     @Override
     @Transactional
-    public ForgetPasswordDTO forgotPasswordForMerchant(String username) {
-        if (username == null || username.isBlank()) {
-            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Username is required");
-        }
-        User user = userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
-        if (user.getRole() != Role.MERCHANT || user.getMerchantId() == null || user.getSubMerchantId() != null) {
-            throw new InvalidRequestException(
-                    ResponseCodes.NOT_A_MERCHANT_USER_CODE,
-                    "Only main merchant users can use this endpoint."
-            );
-        }
-        ForgetPasswordDTO dto = new ForgetPasswordDTO();
-        dto.setUsername(user.getUsername());
-        return forgetPassword(dto);
-    }
-
-    @Override
-    @Transactional
-    public ForgetPasswordDTO forgotPasswordForSubMerchant(String username) {
-        if (username == null || username.isBlank()) {
-            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Username is required");
-        }
-        User user = userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
-        if (user.getSubMerchantId() == null) {
-            throw new InvalidRequestException(
-                    ResponseCodes.NOT_A_SUB_MERCHANT_USER_CODE,
-                    "Only sub-merchant users can use this endpoint."
-            );
-        }
-        ForgetPasswordDTO dto = new ForgetPasswordDTO();
-        dto.setUsername(user.getUsername());
-        return forgetPassword(dto);
-    }
-
-    @Override
-    @Transactional
     public ForgotPasswordApprovalDTO approveForgotPassword(ForgotPasswordApprovalDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "approveForgotPassword", "userId", dto.getUserId());
+        ServiceLoggingHelper.logGettingData(log, "User by id", "userId", dto.getUserId());
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.USER_NOT_FOUND_CODE,
+                            "User not found"
+                    );
+                });
         if (Constants.DB_TRUE.equals(user.getIsSystemUser())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.SYSTEM_USER_FORGOT_PASSWORD_NOT_ALLOWED_CODE, "System user cannot use forgot password flow");
             throw new InvalidRequestException(
                     ResponseCodes.SYSTEM_USER_FORGOT_PASSWORD_NOT_ALLOWED_CODE,
                     "System user cannot use forgot password flow"
             );
         }
         if (!Constants.USER_FORGOT_PASSWORD_PENDING_STATUS.equals(user.getStatus())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.FORGOT_PASSWORD_NOT_PENDING_CODE, "User is not in forgot password pending status");
             throw new InvalidRequestException(
                     ResponseCodes.FORGOT_PASSWORD_NOT_PENDING_CODE,
                     "User is not in forgot password pending status"
@@ -596,6 +601,7 @@ public class UserServiceImpl implements UserService {
         result.setStatus(ResponseStatus.SUCCESS.getStatus());
         result.setResponseCode(ResponseCodes.SUCCESS_CODE);
         result.setResponseMessage("Password reset approved. User is now active.");
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "approveForgotPassword", "userId", user.getUserId());
         return result;
     }
 }

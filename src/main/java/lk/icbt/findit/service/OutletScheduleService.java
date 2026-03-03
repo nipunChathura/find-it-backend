@@ -24,11 +24,6 @@ public interface OutletScheduleService {
     List<OutletScheduleItemResponse> getTodaysSchedule(Long outletId, LocalDate date);
 
     /**
-     * List all schedules for an outlet.
-     */
-    List<OutletScheduleItemResponse> getSchedulesForOutlet(Long outletId);
-
-    /**
      * List all schedules for an outlet grouped by type (NORMAL, EMERGENCY, TEMPORARY, DAILY).
      * @param date optional – filter by date: NORMAL by day-of-week, EMERGENCY/DAILY by special_date, TEMPORARY by range
      * @param dayOfWeek optional – filter NORMAL schedules by day name (e.g. MONDAY)

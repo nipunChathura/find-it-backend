@@ -1,5 +1,6 @@
 package lk.icbt.findit.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -39,9 +40,10 @@ public class MerchantOnboardingRequest {
     private MerchantType merchantType;
 
     /**
-     * Optional. When set, onboarding creates a sub-merchant under this parent merchant.
-     * When null, onboarding creates a main merchant.
+     * Optional. When set (positive), onboarding creates a sub-merchant under this parent merchant.
+     * When null or not provided, onboarding creates a main merchant.
      */
+    @JsonAlias("parent_merchant_id")
     private Long parentMerchantId;
 
     @NotBlank(message = "Username is required")
@@ -51,6 +53,6 @@ public class MerchantOnboardingRequest {
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 255)
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,12}$", message = "Password must be 6-12 characters with at least one letter and one digit")
+//    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,12}$", message = "Password must be 6-12 characters with at least one letter and one digit")
     private String password;
 }

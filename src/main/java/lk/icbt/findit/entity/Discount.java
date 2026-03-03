@@ -29,6 +29,8 @@ public class Discount extends AbstractEntity {
     private Date endDate;
     @Column(name = "status")
     private String status;
+    @Column(name = "discount_image")
+    private String discountImage;
 
     @OneToMany(mappedBy = "discount", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DiscountItem> discountItems = new ArrayList<>();

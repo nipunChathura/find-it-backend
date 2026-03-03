@@ -4,6 +4,8 @@ public class ResponseCodes {
     public static final String SUCCESS_CODE = "00";
     public static final String FAILED_CODE = "01";
 
+    /** Request body validation failed (e.g. @Valid). */
+    public static final String VALIDATION_ERROR_CODE = "5000";
     public static final String MISSING_PARAMETER_CODE = "5100";
 
     public static final String INVALID_REGISTRATION_TYPE_CODE = "5201";

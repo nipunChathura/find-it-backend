@@ -10,14 +10,8 @@ import lk.icbt.findit.dto.UserAddDTO;
 import lk.icbt.findit.dto.UserApprovalDTO;
 import lk.icbt.findit.dto.OutletAddDTO;
 import lk.icbt.findit.dto.UserUpdateDTO;
-import lk.icbt.findit.request.MerchantRequest;
-import lk.icbt.findit.request.AdminSubMerchantAddRequest;
-import lk.icbt.findit.request.UserAddRequest;
-import lk.icbt.findit.request.UserUpdateRequest;
-import lk.icbt.findit.request.UserStatusUpdateRequest;
-import lk.icbt.findit.request.MerchantStatusChangeRequest;
-import lk.icbt.findit.request.OutletStatusUpdateRequest;
-import lk.icbt.findit.request.UserRequest;
+import lk.icbt.findit.request.*;
+import lk.icbt.findit.dto.SubMerchantApprovalDTO;
 import lk.icbt.findit.response.GetAllMerchantsResponse;
 import lk.icbt.findit.response.GetAllOutletsResponse;
 import lk.icbt.findit.response.MerchantResponse;
@@ -152,19 +146,17 @@ public class AdminController {
     @GetMapping(value = "/merchants", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<GetAllMerchantsResponse> getAllMerchants(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String merchantType) {
-        GetAllMerchantsResponse response = merchantService.getAllMerchantsAndSubMerchants(name, email, username, status, merchantType);
+        GetAllMerchantsResponse response = merchantService.getAllMerchantsAndSubMerchants(search, status, merchantType);
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
     @PostMapping(value = "/merchants", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<MerchantWithOutletsResponse> addMerchant(@Valid @RequestBody MerchantRequest request) {
+    public ResponseEntity<MerchantWithOutletsResponse> addMerchant(@Valid @RequestBody MerchantOnboardingRequest request) {
         MerchantOnboardingDTO dto = new MerchantOnboardingDTO();
         BeanUtils.copyProperties(request, dto);
         MerchantOnboardingDTO result = merchantService.onboard(dto);
@@ -212,6 +204,47 @@ public class AdminController {
         response.setMerchantType(result.getMerchantType());
         response.setMerchantStatus(result.getMerchantStatus());
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
+    @PutMapping(value = "/merchants/reject/{merchantId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<MerchantResponse> rejectMerchant(
+            @PathVariable Long merchantId,
+            @RequestBody(required = false) RejectRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        MerchantStatusChangeDTO result = merchantService.rejectMerchant(merchantId, reason);
+        MerchantResponse response = new MerchantResponse();
+        response.setStatus(result.getStatus());
+        response.setResponseCode(result.getResponseCode());
+        response.setResponseMessage(result.getResponseMessage());
+        response.setMerchantId(result.getMerchantId());
+        response.setMerchantName(result.getMerchantName());
+        response.setMerchantEmail(result.getMerchantEmail());
+        response.setMerchantStatus(result.getMerchantStatus());
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
+    @PutMapping(value = "/merchants/{merchantId}/sub-merchants/{subMerchantId}/approval", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<SubMerchantResponse> approveSubMerchant(
+            @PathVariable Long merchantId,
+            @PathVariable Long subMerchantId) {
+        SubMerchantApprovalDTO result = subMerchantService.approveSubMerchant(subMerchantId, merchantId);
+        return ResponseEntity.ok(mapToSubMerchantResponse(result));
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
+    @PutMapping(value = "/merchants/{merchantId}/sub-merchants/{subMerchantId}/reject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<SubMerchantResponse> rejectSubMerchant(
+            @PathVariable Long merchantId,
+            @PathVariable Long subMerchantId,
+            @RequestBody(required = false) RejectRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        SubMerchantApprovalDTO result = subMerchantService.rejectSubMerchant(subMerchantId, merchantId, reason);
+        return ResponseEntity.ok(mapToSubMerchantResponse(result));
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
@@ -263,6 +296,28 @@ public class AdminController {
         response.setMerchantName(result.getMerchantName());
         response.setMerchantEmail(result.getMerchantEmail());
         response.setMerchantStatus(result.getMerchantStatus());
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('SYSADMIN')")
+    @PutMapping(value = "/users/reject/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<UserResponse> rejectUser(
+            @PathVariable Long userId,
+            @RequestBody(required = false) RejectRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        UserUpdateDTO result = userService.rejectUser(userId, reason);
+        UserResponse response = new UserResponse();
+        response.setStatus(result.getStatus());
+        response.setResponseCode(result.getResponseCode());
+        response.setResponseMessage(result.getResponseMessage());
+        response.setUserId(result.getUserId());
+        response.setUsername(result.getUsername());
+        response.setEmail(result.getEmail());
+        response.setUserStatus(result.getUserStatus());
+        response.setRole(result.getRole());
+        response.setMerchantId(result.getMerchantId());
+        response.setSubMerchantId(result.getSubMerchantId());
         return ResponseEntity.ok(response);
     }
 
@@ -331,5 +386,23 @@ public class AdminController {
         response.setOutletStatus(result.getOutletStatus());
         response.setSubscriptionValidUntil(result.getSubscriptionValidUntil());
         return ResponseEntity.ok(response);
+    }
+
+    private static SubMerchantResponse mapToSubMerchantResponse(SubMerchantApprovalDTO result) {
+        SubMerchantResponse response = new SubMerchantResponse();
+        response.setStatus(result.getStatus());
+        response.setResponseCode(result.getResponseCode());
+        response.setResponseMessage(result.getResponseMessage());
+        response.setSubMerchantId(result.getSubMerchantId());
+        response.setMerchantId(result.getMerchantId());
+        response.setMerchantName(result.getMerchantName());
+        response.setMerchantEmail(result.getMerchantEmail());
+        response.setMerchantNic(result.getMerchantNic());
+        response.setMerchantProfileImage(result.getMerchantProfileImage());
+        response.setMerchantAddress(result.getMerchantAddress());
+        response.setMerchantPhoneNumber(result.getMerchantPhoneNumber());
+        response.setMerchantType(result.getMerchantType());
+        response.setSubMerchantStatus(result.getSubMerchantStatus());
+        return response;
     }
 }

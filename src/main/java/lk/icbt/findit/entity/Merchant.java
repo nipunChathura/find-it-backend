@@ -14,10 +14,6 @@ public class Merchant extends AbstractEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "merchant_id")
     private Long merchantId;
-    @Column(name = "user_id", nullable = true)
-    private Long userId;
-    @Column(name = "username", nullable = true, length = 100)
-    private String username;
     @Column(name = "merchant_name", nullable = false)
     private String merchantName;
     @Column(name = "merchant_email", nullable = false, unique = true)

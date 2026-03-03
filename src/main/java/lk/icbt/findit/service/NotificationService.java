@@ -27,4 +27,24 @@ public interface NotificationService {
      * Sends a push notification via FCM. Does not persist to database.
      */
     void sendPushNotification(String token, String title, String body);
+
+    /**
+     * Notifies all admin-type users (SYSADMIN, ADMIN) when a PENDING item is saved.
+     * Saves an in-app notification for each admin. Does not throw; logs and ignores errors.
+     *
+     * @param itemType  e.g. "User", "Merchant", "Sub-merchant", "Outlet"
+     * @param itemName  display name or identifier of the item
+     * @param detail   optional extra detail (e.g. "Pending approval")
+     */
+    void notifyAdminsOfPendingItem(String itemType, String itemName, String detail);
+
+    /**
+     * Sends an in-app notification to each of the given user IDs. Does not throw; logs and ignores per-user errors.
+     *
+     * @param userIds  user IDs to notify
+     * @param type     notification type (e.g. "MERCHANT_APPROVAL", "MERCHANT_REJECTED", "SUB_MERCHANT_APPROVAL", "SUB_MERCHANT_REJECTED")
+     * @param title    notification title
+     * @param body     notification body
+     */
+    void notifyUserIds(List<Long> userIds, String type, String title, String body);
 }

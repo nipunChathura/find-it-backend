@@ -23,8 +23,12 @@ import lk.icbt.findit.response.MerchantListItemResponse;
 import lk.icbt.findit.response.MerchantWithOutletsResponse;
 import lk.icbt.findit.response.OutletListItemResponse;
 import lk.icbt.findit.service.MerchantService;
+import lk.icbt.findit.service.NotificationService;
 import lk.icbt.findit.service.OutletService;
+import lk.icbt.findit.service.ServiceLoggingHelper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,23 +41,21 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MerchantServiceImpl implements MerchantService {
 
+    private static final Logger log = LoggerFactory.getLogger(MerchantServiceImpl.class);
+    private static final String SERVICE_NAME = "MerchantService";
+
     private final MerchantRepository merchantRepository;
     private final SubMerchantRepository subMerchantRepository;
     private final OutletRepository outletRepository;
     private final OutletService outletService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     @Override
-    public GetAllMerchantsResponse getAllMerchantsAndSubMerchants() {
-        return getAllMerchantsAndSubMerchants(null, null, null, null, null);
-    }
-
-    @Override
-    public GetAllMerchantsResponse getAllMerchantsAndSubMerchants(String name, String email, String username, String status, String merchantTypeStr) {
-        String nameParam = (name != null && !name.isBlank()) ? name.trim() : "";
-        String emailParam = (email != null && !email.isBlank()) ? email.trim() : "";
-        String usernameParam = (username != null && !username.isBlank()) ? username.trim() : "";
+    public GetAllMerchantsResponse getAllMerchantsAndSubMerchants(String search, String status, String merchantTypeStr) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "getAllMerchantsAndSubMerchants", "search", search, "status", status);
+        String searchParam = (search != null && !search.isBlank()) ? search.trim() : "";
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : "";
         MerchantType merchantTypeParam = null;
         if (merchantTypeStr != null && !merchantTypeStr.isBlank()) {
@@ -64,13 +66,51 @@ public class MerchantServiceImpl implements MerchantService {
             }
         }
 
-        List<Merchant> mainMerchants = merchantRepository.findAllWithFilters(
-                Constants.MERCHANT_DELETED_STATUS, nameParam, emailParam, usernameParam, statusParam, merchantTypeParam);
-        List<SubMerchant> subMerchants = subMerchantRepository.findAllWithFilters(
-                Constants.MERCHANT_DELETED_STATUS, nameParam, emailParam, statusParam, merchantTypeParam);
+        final List<Merchant> mainMerchants = new java.util.ArrayList<>(merchantRepository.findAllWithFilters(
+                Constants.MERCHANT_DELETED_STATUS, searchParam, statusParam, merchantTypeParam));
+        final List<SubMerchant> subMerchants = new java.util.ArrayList<>(subMerchantRepository.findAllWithFilters(
+                Constants.MERCHANT_DELETED_STATUS, searchParam, statusParam, merchantTypeParam));
+        if (!searchParam.isEmpty()) {
+            final java.util.Set<Long> mainIdsFromSearch = mainMerchants.stream().map(Merchant::getMerchantId).collect(Collectors.toSet());
+            List<Long> merchantIdsWithUsername = userRepository
+                    .findByRoleAndMerchantIdNotNullAndUsernameContainingIgnoreCase(Role.MERCHANT, searchParam)
+                    .stream()
+                    .map(User::getMerchantId)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList();
+            for (Long mid : merchantIdsWithUsername) {
+                if (!mainIdsFromSearch.contains(mid)) {
+                    java.util.Optional<Merchant> opt = merchantRepository.findById(mid);
+                    if (opt.isPresent()) {
+                        addMerchantIfMatches(mainMerchants, opt.get(), statusParam, merchantTypeParam);
+                    }
+                }
+            }
+            java.util.Set<Long> subIdsFromSearch = subMerchants.stream().map(SubMerchant::getSubMerchantId).collect(Collectors.toSet());
+            List<Long> subMerchantIdsWithUsername = userRepository
+                    .findByRoleAndSubMerchantIdNotNullAndUsernameContainingIgnoreCase(Role.SUBMERCHANT, searchParam)
+                    .stream()
+                    .map(User::getSubMerchantId)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList();
+            for (Long sid : subMerchantIdsWithUsername) {
+                if (!subIdsFromSearch.contains(sid)) {
+                    java.util.Optional<SubMerchant> opt = subMerchantRepository.findById(sid);
+                    if (opt.isPresent()) {
+                        addSubMerchantIfMatches(subMerchants, opt.get(), statusParam, merchantTypeParam);
+                    }
+                }
+            }
+        }
+        List<Long> mainMerchantIds = mainMerchants.stream().map(Merchant::getMerchantId).toList();
+        java.util.Map<Long, String> merchantIdToUsername = mainMerchantIds.isEmpty() ? java.util.Collections.emptyMap()
+                : userRepository.findByMerchantIdInAndRole(mainMerchantIds, Role.MERCHANT).stream()
+                        .collect(Collectors.toMap(User::getMerchantId, User::getUsername, (a, b) -> a));
 
         List<MerchantListItemResponse> list = new java.util.ArrayList<>();
-        mainMerchants.forEach(m -> list.add(mapToListItem(m)));
+        mainMerchants.forEach(m -> list.add(mapToListItem(m, merchantIdToUsername.get(m.getMerchantId()))));
         subMerchants.forEach(s -> list.add(mapToListItem(s)));
 
         GetAllMerchantsResponse response = new GetAllMerchantsResponse();
@@ -78,14 +118,31 @@ public class MerchantServiceImpl implements MerchantService {
         response.setResponseCode(ResponseCodes.SUCCESS_CODE);
         response.setResponseMessage("Success");
         response.setMerchants(list);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getAllMerchantsAndSubMerchants", "count", list.size());
         return response;
     }
 
-    private MerchantListItemResponse mapToListItem(Merchant m) {
+    private static void addMerchantIfMatches(List<Merchant> list, Merchant m, String statusParam, MerchantType merchantTypeParam) {
+        if (!Constants.MERCHANT_DELETED_STATUS.equals(m.getStatus())
+                && (statusParam.isEmpty() || (m.getStatus() != null && m.getStatus().equals(statusParam)))
+                && (merchantTypeParam == null || merchantTypeParam.equals(m.getMerchantType()))) {
+            list.add(m);
+        }
+    }
+
+    private static void addSubMerchantIfMatches(List<SubMerchant> list, SubMerchant s, String statusParam, MerchantType merchantTypeParam) {
+        if (!Constants.MERCHANT_DELETED_STATUS.equals(s.getStatus())
+                && (statusParam.isEmpty() || (s.getStatus() != null && s.getStatus().equals(statusParam)))
+                && (merchantTypeParam == null || merchantTypeParam.equals(s.getMerchantType()))) {
+            list.add(s);
+        }
+    }
+
+    private MerchantListItemResponse mapToListItem(Merchant m, String username) {
         MerchantListItemResponse r = new MerchantListItemResponse();
         r.setType("MERCHANT");
         r.setMerchantId(m.getMerchantId());
-        r.setUsername(m.getUsername());
+        r.setUsername(username);
         r.setMerchantName(m.getMerchantName());
         r.setMerchantEmail(m.getMerchantEmail());
         r.setMerchantNic(m.getMerchantNic());
@@ -119,8 +176,10 @@ public class MerchantServiceImpl implements MerchantService {
     @Override
     @Transactional
     public MerchantOnboardingDTO onboard(MerchantOnboardingDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "onboard", "merchantEmail", dto.getMerchantEmail(), "parentMerchantId", dto.getParentMerchantId());
         if (dto.getUsername() != null && !dto.getUsername().isBlank()) {
             if (userRepository.existsByUsername(dto.getUsername().trim())) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.USERNAME_ALREADY_EXISTS_CODE, "Username already exists");
                 throw new InvalidRequestException(
                         ResponseCodes.USERNAME_ALREADY_EXISTS_CODE,
                         "Username already exists"
@@ -128,25 +187,31 @@ public class MerchantServiceImpl implements MerchantService {
             }
         }
 
-        if (dto.getParentMerchantId() != null) {
+        if (dto.getParentMerchantId() != null && dto.getParentMerchantId() > 0) {
             return onboardSubMerchant(dto);
         }
         return onboardMainMerchant(dto);
     }
 
     private MerchantOnboardingDTO onboardSubMerchant(MerchantOnboardingDTO dto) {
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id (parent)", "parentMerchantId", dto.getParentMerchantId());
         Merchant parent = merchantRepository.findById(dto.getParentMerchantId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.MERCHANT_NOT_FOUND_CODE,
-                        "Parent merchant not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Parent merchant not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_FOUND_CODE,
+                            "Parent merchant not found"
+                    );
+                });
         if (merchantRepository.existsByMerchantEmail(dto.getMerchantEmail().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE, "Merchant with this email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE,
                     "Merchant with this email already exists"
             );
         }
         if (subMerchantRepository.existsByMerchantEmail(dto.getMerchantEmail().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.SUB_MERCHANT_EMAIL_ALREADY_EXISTS_CODE, "Sub-merchant with this email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.SUB_MERCHANT_EMAIL_ALREADY_EXISTS_CODE,
                     "Sub-merchant with this email already exists"
@@ -171,20 +236,21 @@ public class MerchantServiceImpl implements MerchantService {
 
         SubMerchant saved = subMerchantRepository.save(subMerchant);
 
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            saveSubMerchantUser(parent.getMerchantId(), saved.getSubMerchantId(), saved.getMerchantEmail(),
-                    dto.getPassword(), now);
-        }
 
+        saveSubMerchantUser(parent.getMerchantId(), saved.getSubMerchantId(), dto.getUsername(), saved.getMerchantEmail(),
+                    dto.getPassword(), now);
+
+        notificationService.notifyAdminsOfPendingItem("Sub-merchant", saved.getMerchantName(), "Sub-merchant pending approval.");
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "onboardSubMerchant", "subMerchantId", saved.getSubMerchantId());
         return mapToDto(saved, "Sub-merchant onboarding submitted successfully. Pending approval.");
     }
 
     /**
      * Creates and saves a user with role SUBMERCHANT for sub-merchant login after approval.
      */
-    private void saveSubMerchantUser(Long parentMerchantId, Long subMerchantId, String email, String plainPassword, Date now) {
+    private void saveSubMerchantUser(Long parentMerchantId, Long subMerchantId, String username, String email, String plainPassword, Date now) {
         User user = new User();
-        user.setUsername(email);
+        user.setUsername(username);
         user.setPassword(passwordEncoder.encode(plainPassword));
         user.setEmail(email);
         user.setIsSystemUser(Constants.DB_FALSE);
@@ -200,6 +266,7 @@ public class MerchantServiceImpl implements MerchantService {
 
     private MerchantOnboardingDTO onboardMainMerchant(MerchantOnboardingDTO dto) {
         if (merchantRepository.existsByMerchantEmail(dto.getMerchantEmail().trim())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE, "Merchant with this email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE,
                     "Merchant with this email already exists"
@@ -208,7 +275,6 @@ public class MerchantServiceImpl implements MerchantService {
 
         Merchant merchant = new Merchant();
         String emailLower = dto.getMerchantEmail().trim().toLowerCase();
-        merchant.setUsername(emailLower);
         merchant.setMerchantName(dto.getMerchantName().trim());
         merchant.setMerchantEmail(emailLower);
         merchant.setMerchantNic(dto.getMerchantNic() != null ? dto.getMerchantNic().trim() : null);
@@ -225,35 +291,39 @@ public class MerchantServiceImpl implements MerchantService {
 
         Merchant saved = merchantRepository.save(merchant);
 
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            User user = new User();
-            user.setUsername(saved.getMerchantEmail());
-            user.setPassword(passwordEncoder.encode(dto.getPassword()));
-            user.setEmail(saved.getMerchantEmail());
-            user.setIsSystemUser(Constants.DB_FALSE);
-            user.setRole(Role.MERCHANT);
-            user.setStatus(Constants.USER_PENDING_STATUS);
-            user.setMerchantId(saved.getMerchantId());
-            user.setCreatedDatetime(now);
-            user.setModifiedDatetime(now);
-            user.setVersion(1);
-            User savedUser = userRepository.save(user);
-            saved.setUserId(savedUser.getUserId());
-            merchantRepository.save(saved);
-        }
+        User user = new User();
+        user.setUsername(dto.getUsername());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setEmail(saved.getMerchantEmail());
+        user.setIsSystemUser(Constants.DB_FALSE);
+        user.setRole(Role.MERCHANT);
+        user.setStatus(Constants.USER_PENDING_STATUS);
+        user.setMerchantId(saved.getMerchantId());
+        user.setCreatedDatetime(now);
+        user.setModifiedDatetime(now);
+        user.setVersion(1);
+        userRepository.save(user);
 
+        notificationService.notifyAdminsOfPendingItem("Merchant", saved.getMerchantName(), "Merchant onboarding pending approval.");
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "onboardMainMerchant", "merchantId", saved.getMerchantId());
         return mapToDto(saved, "Merchant onboarding submitted successfully. Pending approval.");
     }
 
     @Override
     @Transactional
     public MerchantApprovalDTO approveMerchant(MerchantApprovalDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "approveMerchant", "merchantId", dto.getMerchantId());
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id", "merchantId", dto.getMerchantId());
         Merchant merchant = merchantRepository.findById(dto.getMerchantId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.MERCHANT_NOT_FOUND_CODE,
-                        "Merchant not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_FOUND_CODE,
+                            "Merchant not found"
+                    );
+                });
         if (!Constants.MERCHANT_PENDING_STATUS.equals(merchant.getStatus())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_ALREADY_APPROVED_CODE, "Merchant is not in pending status or already approved");
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_ALREADY_APPROVED_CODE,
                     "Merchant is not in pending status or already approved"
@@ -270,20 +340,41 @@ public class MerchantServiceImpl implements MerchantService {
             user.setModifiedDatetime(new Date());
             userRepository.save(user);
         }
+        List<Long> merchantUserIds = users.stream().map(User::getUserId).toList();
+        notificationService.notifyUserIds(merchantUserIds, "MERCHANT_APPROVAL",
+                "Merchant approved",
+                "Your merchant account \"" + saved.getMerchantName() + "\" has been approved. You can now log in.");
 
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "approveMerchant", "merchantId", saved.getMerchantId());
         return mapToApprovalDto(saved, "Merchant approved successfully.");
     }
 
     @Override
     @Transactional
+    public MerchantStatusChangeDTO rejectMerchant(Long merchantId, String reason) {
+        MerchantStatusChangeDTO dto = new MerchantStatusChangeDTO();
+        dto.setMerchantId(merchantId);
+        dto.setNewStatus(Constants.MERCHANT_INACTIVE_STATUS);
+        dto.setInactiveReason(reason);
+        return changeMerchantStatus(dto);
+    }
+
+    @Override
+    @Transactional
     public MerchantUpdateDTO updateMerchant(MerchantUpdateDTO dto) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "updateMerchant", "merchantId", dto.getMerchantId());
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id", "merchantId", dto.getMerchantId());
         Merchant merchant = merchantRepository.findById(dto.getMerchantId())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.MERCHANT_NOT_FOUND_CODE,
-                        "Merchant not found"
-                ));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                    return new InvalidRequestException(
+                            ResponseCodes.MERCHANT_NOT_FOUND_CODE,
+                            "Merchant not found"
+                    );
+                });
         String newEmail = dto.getMerchantEmail() != null ? dto.getMerchantEmail().trim().toLowerCase() : null;
         if (newEmail != null && merchantRepository.existsByMerchantEmailAndMerchantIdNot(newEmail, merchant.getMerchantId())) {
+            ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE, "Merchant with this email already exists");
             throw new InvalidRequestException(
                     ResponseCodes.MERCHANT_EMAIL_ALREADY_EXISTS_CODE,
                     "Merchant with this email already exists"
@@ -298,6 +389,7 @@ public class MerchantServiceImpl implements MerchantService {
         if (dto.getMerchantType() != null) merchant.setMerchantType(dto.getMerchantType());
         merchant.setModifiedDatetime(new Date());
         Merchant saved = merchantRepository.save(merchant);
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "updateMerchant", "merchantId", saved.getMerchantId());
         return mapToUpdateDto(saved, "Merchant updated successfully.");
     }
 
@@ -343,13 +435,27 @@ public class MerchantServiceImpl implements MerchantService {
         merchant.setInactiveReason(Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus) ? dto.getInactiveReason() : null);
         merchant.setModifiedDatetime(new Date());
         Merchant saved = merchantRepository.save(merchant);
+        List<User> merchantUsers = userRepository.findByMerchantIdAndRole(saved.getMerchantId(), Role.MERCHANT);
+        List<Long> merchantUserIds = merchantUsers.stream().map(User::getUserId).toList();
+        if (Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus)) {
+            String reason = (dto.getInactiveReason() != null && !dto.getInactiveReason().isBlank()) ? " Reason: " + dto.getInactiveReason() : ".";
+            notificationService.notifyUserIds(merchantUserIds, "MERCHANT_REJECTED",
+                    "Merchant application not approved",
+                    "Your merchant account \"" + saved.getMerchantName() + "\" has been set to inactive." + reason);
+        }
         return mapToStatusChangeDto(saved, "Merchant status updated successfully.");
     }
 
     @Override
     public MerchantWithOutletsResponse getMerchantWithOutlets(Long merchantId) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "getMerchantWithOutlets", "merchantId", merchantId);
+        ServiceLoggingHelper.logGettingData(log, "Merchant by id", "merchantId", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
-                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found"));
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                    return new InvalidRequestException(ResponseCodes.MERCHANT_NOT_FOUND_CODE, "Merchant not found");
+                });
+        ServiceLoggingHelper.logGettingData(log, "Outlets by merchantId", "merchantId", merchantId);
         List<Outlet> outlets = outletRepository.findByMerchant_MerchantIdAndSubMerchantIsNull(merchantId);
         MerchantWithOutletsResponse response = new MerchantWithOutletsResponse();
         response.setStatus(ResponseStatus.SUCCESS.getStatus());
@@ -357,7 +463,8 @@ public class MerchantServiceImpl implements MerchantService {
         response.setMerchantId(merchant.getMerchantId());
         response.setSubMerchantId(null);
         response.setParentMerchantName(null);
-        response.setUsername(merchant.getUsername());
+        response.setUsername(userRepository.findByMerchantIdAndRole(merchantId, Role.MERCHANT).stream()
+                .findFirst().map(User::getUsername).orElse(null));
         response.setMerchantName(merchant.getMerchantName());
         response.setMerchantEmail(merchant.getMerchantEmail());
         response.setMerchantNic(merchant.getMerchantNic());
@@ -368,6 +475,7 @@ public class MerchantServiceImpl implements MerchantService {
         response.setMerchantStatus(merchant.getStatus());
         response.setInactiveReason(merchant.getInactiveReason());
         response.setOutlets(outlets.stream().map(outletService::toListItemResponse).collect(Collectors.toList()));
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getMerchantWithOutlets", "merchantId", merchantId, "outletCount", outlets.size());
         return response;
     }
 
@@ -379,7 +487,8 @@ public class MerchantServiceImpl implements MerchantService {
         result.setMerchantId(merchant.getMerchantId());
         result.setSubMerchantId(null);
         result.setParentMerchantName(null);
-        result.setUsername(merchant.getUsername());
+        result.setUsername(userRepository.findByMerchantIdAndRole(merchant.getMerchantId(), Role.MERCHANT).stream()
+                .findFirst().map(User::getUsername).orElse(null));
         result.setMerchantName(merchant.getMerchantName());
         result.setMerchantEmail(merchant.getMerchantEmail());
         result.setMerchantNic(merchant.getMerchantNic());

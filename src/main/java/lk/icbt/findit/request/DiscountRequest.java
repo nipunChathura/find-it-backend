@@ -29,6 +29,10 @@ public class DiscountRequest {
     @Size(max = 50)
     private String status;
 
+    /** Image URL or path for the discount. */
+    @Size(max = 500)
+    private String discountImage;
+
     /** Item IDs to link to this discount. Optional; can be empty. */
     private List<Long> itemIds;
 }

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lk.icbt.findit.dto.*;
 import lk.icbt.findit.request.MerchantOnboardingRequest;
 import lk.icbt.findit.request.MerchantRequest;
+import lk.icbt.findit.request.RejectRequest;
 import lk.icbt.findit.request.SubMerchantStatusChangeRequest;
 import lk.icbt.findit.request.UserRequest;
 import lk.icbt.findit.entity.Role;
@@ -80,6 +81,7 @@ public class MerchantController {
     public ResponseEntity<MerchantResponse> onboard(@Valid @RequestBody MerchantOnboardingRequest request) {
         MerchantOnboardingDTO dto = new MerchantOnboardingDTO();
         BeanUtils.copyProperties(request, dto);
+        dto.setParentMerchantId(request.getParentMerchantId());
         MerchantOnboardingDTO result = merchantService.onboard(dto);
         MerchantResponse response = new MerchantResponse();
         BeanUtils.copyProperties(result, response);
@@ -109,6 +111,18 @@ public class MerchantController {
     }
 
     @PreAuthorize("hasRole('MERCHANT')")
+    @PutMapping(value = "/sub-merchants/{subMerchantId}/reject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<SubMerchantResponse> rejectSubMerchant(
+            @PathVariable Long subMerchantId,
+            @RequestBody(required = false) RejectRequest request) {
+        String username = getAuthenticatedUsername();
+        String reason = request != null ? request.getReason() : null;
+        SubMerchantApprovalDTO result = subMerchantService.rejectSubMerchantForMerchant(username, subMerchantId, reason);
+        return ResponseEntity.ok(mapToSubMerchantResponse(result));
+    }
+
+    @PreAuthorize("hasRole('MERCHANT')")
     @PutMapping(value = "/sub-merchants/{subMerchantId}/status", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<SubMerchantResponse> updateSubMerchantStatus(
@@ -118,31 +132,6 @@ public class MerchantController {
         SubMerchantApprovalDTO result = subMerchantService.updateSubMerchantStatusForMerchant(
                 username, subMerchantId, request.getStatus(), request.getInactiveReason());
         return ResponseEntity.ok(mapToSubMerchantResponse(result));
-    }
-
-    @PreAuthorize("hasRole('MERCHANT')")
-    @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<MerchantResponse> changePassword(@Valid @RequestBody UserRequest request) {
-        String username = getAuthenticatedUsername();
-        PasswordChangeDTO result = userService.changePasswordForMerchant(
-                username, request.getCurrentPassword(), request.getNewPassword());
-        MerchantResponse response = new MerchantResponse();
-        response.setStatus(result.getStatus());
-        response.setResponseCode(result.getResponseCode());
-        response.setResponseMessage(result.getResponseMessage());
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping(value = "/password/forgot", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<MerchantResponse> forgotPassword(@Valid @RequestBody UserRequest request) {
-        ForgetPasswordDTO result = userService.forgotPasswordForMerchant(request.getUsername());
-        MerchantResponse response = new MerchantResponse();
-        response.setStatus(result.getStatus());
-        response.setResponseCode(result.getResponseCode());
-        response.setResponseMessage(result.getResponseMessage());
-        return ResponseEntity.ok(response);
     }
 
     private String getAuthenticatedUsername() {

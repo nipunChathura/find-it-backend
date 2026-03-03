@@ -21,14 +21,12 @@ public interface SubMerchantRepository extends JpaRepository<SubMerchant, Long> 
     List<SubMerchant> findAllByStatusNot(@Param("excludedStatus") String excludedStatus);
 
     @Query("SELECT s FROM SubMerchant s JOIN FETCH s.merchant WHERE s.status != :excludedStatus "
-            + "AND (:name = '' OR LOWER(s.merchantName) LIKE LOWER(CONCAT('%', :name, '%'))) "
-            + "AND (:email = '' OR LOWER(s.merchantEmail) LIKE LOWER(CONCAT('%', :email, '%'))) "
+            + "AND (:search = '' OR LOWER(s.merchantName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(s.merchantEmail) LIKE LOWER(CONCAT('%', :search, '%'))) "
             + "AND (:status = '' OR s.status = :status) "
             + "AND (:merchantType IS NULL OR s.merchantType = :merchantType)")
     List<SubMerchant> findAllWithFilters(
             @Param("excludedStatus") String excludedStatus,
-            @Param("name") String name,
-            @Param("email") String email,
+            @Param("search") String search,
             @Param("status") String status,
             @Param("merchantType") MerchantType merchantType);
 }

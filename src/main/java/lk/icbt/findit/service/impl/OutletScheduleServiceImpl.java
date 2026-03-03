@@ -114,14 +114,6 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
     }
 
     @Override
-    public List<OutletScheduleItemResponse> getSchedulesForOutlet(Long outletId) {
-        ensureOutletExists(outletId);
-        return scheduleRepository.findActiveByOutletOrderByPriorityDesc(outletId).stream()
-                .map(this::toItemResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public OutletSchedulesGroupedResponse getSchedulesGroupedByType(Long outletId, LocalDate date, String dayOfWeek) {
         ensureOutletExists(outletId);
         List<OutletSchedule> all = scheduleRepository.findActiveByOutletOrderByPriorityDesc(outletId);
