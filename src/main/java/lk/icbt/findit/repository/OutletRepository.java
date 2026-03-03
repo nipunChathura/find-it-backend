@@ -19,14 +19,14 @@ public interface OutletRepository extends JpaRepository<Outlet, Long> {
             @Param("statuses") List<String> statuses,
             @Param("before") Date before);
 
-    @Query("SELECT o FROM Outlet o " +
-            "JOIN FETCH o.merchant m " +
+    @Query("SELECT DISTINCT o FROM Outlet o " +
+            "LEFT JOIN FETCH o.merchant m " +
             "LEFT JOIN FETCH o.subMerchant s " +
             "LEFT JOIN FETCH o.province p " +
             "LEFT JOIN FETCH o.district d " +
             "LEFT JOIN FETCH o.city c " +
             "WHERE (:search = '' OR LOWER(o.outletName) LIKE LOWER(CONCAT('%', :search, '%')) " +
-            "OR LOWER(m.merchantName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "OR (m IS NOT NULL AND LOWER(m.merchantName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "OR (s IS NOT NULL AND LOWER(s.merchantName) LIKE LOWER(CONCAT('%', :search, '%')))) " +
             "AND (:status = '' OR o.status = :status) " +
             "AND (:outletType IS NULL OR o.outletType = :outletType)")
