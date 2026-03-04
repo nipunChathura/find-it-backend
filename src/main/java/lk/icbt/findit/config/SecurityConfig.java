@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/discounts/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT")
                         .requestMatchers("/api/payments/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT")
                         .requestMatchers("/api/notifications/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT", "USER", "CUSTOMER")
+                        .requestMatchers("/api/images/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT", "USER", "CUSTOMER")
                         .requestMatchers(HttpMethod.PUT, "/api/users/password/forgot/approval/**").hasRole("SYSADMIN")
                         .anyRequest().authenticated()
                 )

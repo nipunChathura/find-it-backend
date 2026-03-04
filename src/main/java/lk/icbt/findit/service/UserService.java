@@ -44,4 +44,10 @@ public interface UserService {
     ForgetPasswordDTO forgetPassword(ForgetPasswordDTO dto);
 
     ForgotPasswordApprovalDTO approveForgotPassword(ForgotPasswordApprovalDTO dto);
+
+    /**
+     * Updates the user's profile image. fileName should be the name returned by the image upload API (e.g. for type profile).
+     * Stores profileImageUrl as "profile/{fileName}".
+     */
+    UserResponse changeProfileImage(Long userId, String fileName);
 }

@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -43,9 +44,10 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPaymentDate(toDate(request.getPaymentDate()));
         payment.setPaidMonth(request.getPaidMonth());
         payment.setReceiptImage(request.getReceiptImage());
-        payment.setStatus(request.getStatus() != null && !request.getStatus().isBlank()
+        String paymentStatus = request.getStatus() != null && !request.getStatus().isBlank()
                 ? request.getStatus().trim()
-                : Constants.PAYMENT_PENDING_STATUS);
+                : Constants.PAYMENT_PENDING_STATUS;
+        payment.setStatus(paymentStatus);
 
         Date now = new Date();
         payment.setCreatedDatetime(now);
@@ -53,7 +55,63 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setVersion(1);
 
         Payment saved = paymentRepository.save(payment);
-        return toResponse(saved, "Payment created successfully.");
+
+        // Apply outlet subscription and status based on payment status and dates
+        applyOutletSubscriptionAndStatus(outlet, saved, paymentStatus, now);
+
+        return toResponse(paymentRepository.findById(saved.getPaymentId()).orElse(saved), "Payment created successfully.");
+    }
+
+    /**
+     * - If payment status is ACTIVE/APPROVED: extend outlet subscriptionValidUntil by 1 month.
+     * - If payment status is PENDING: do not extend date.
+     * - If subscriptionValidUntil >= today: set outlet status to ACTIVE.
+     * - If subscriptionValidUntil < payment (paid) date: set outlet status to PENDING_SUBSCRIPTION.
+     * - Otherwise (e.g. subscription expired): set EXPIRED_SUBSCRIPTION.
+     */
+    private void applyOutletSubscriptionAndStatus(Outlet outlet, Payment payment, String paymentStatus, Date now) {
+        boolean isApproved = Constants.PAYMENT_APPROVED_STATUS.equalsIgnoreCase(paymentStatus)
+                || "ACTIVE".equalsIgnoreCase(paymentStatus);
+
+        if (isApproved) {
+            Date currentSubEnd = outlet.getSubscriptionValidUntil();
+            Date baseDate = (currentSubEnd != null && currentSubEnd.after(now)) ? currentSubEnd : now;
+            outlet.setSubscriptionValidUntil(addMonths(baseDate, 1));
+        }
+        // If PENDING: do not change subscriptionValidUntil
+
+        Date paidDate = payment.getPaymentDate() != null ? payment.getPaymentDate() : now;
+        Date todayStart = startOfDay(now);
+        Date subEnd = outlet.getSubscriptionValidUntil();
+
+        if (subEnd != null) {
+            if (!subEnd.before(todayStart)) {
+                outlet.setStatus(Constants.OUTLET_ACTIVE_STATUS);
+            } else if (subEnd.before(paidDate)) {
+                outlet.setStatus(Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
+            } else {
+                outlet.setStatus(Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS);
+            }
+        }
+        outlet.setModifiedDatetime(now);
+        outletRepository.save(outlet);
+    }
+
+    private static Date addMonths(Date date, int months) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.MONTH, months);
+        return cal.getTime();
+    }
+
+    private static Date startOfDay(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTime();
     }
 
     @Override

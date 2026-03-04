@@ -40,6 +40,7 @@ public class DiscountServiceImpl implements DiscountService {
         discount.setDiscountName(trim(request.getDiscountName()));
         discount.setDiscountType(parseDiscountType(request.getDiscountType()));
         discount.setDiscountValue(request.getDiscountValue());
+        discount.setDiscountImage(request.getDiscountImage());
         discount.setStartDate(toDate(request.getStartDate()));
         discount.setEndDate(toDate(request.getEndDate()));
         discount.setStatus(request.getStatus() != null && !request.getStatus().isBlank()
@@ -110,6 +111,7 @@ public class DiscountServiceImpl implements DiscountService {
         if (request.getDiscountName() != null) discount.setDiscountName(request.getDiscountName().trim());
         if (request.getDiscountType() != null) discount.setDiscountType(parseDiscountType(request.getDiscountType()));
         if (request.getDiscountValue() != null) discount.setDiscountValue(request.getDiscountValue());
+        if (request.getDiscountImage() != null) discount.setDiscountImage(request.getDiscountImage());
         if (request.getStartDate() != null) discount.setStartDate(toDate(request.getStartDate()));
         if (request.getEndDate() != null) discount.setEndDate(toDate(request.getEndDate()));
         if (request.getStatus() != null && !request.getStatus().isBlank()) discount.setStatus(request.getStatus().trim());
@@ -189,6 +191,7 @@ public class DiscountServiceImpl implements DiscountService {
         r.setStartDate(formatDate(d.getStartDate()));
         r.setEndDate(formatDate(d.getEndDate()));
         r.setStatus(d.getStatus());
+        r.setDiscountImage(d.getDiscountImage());
         r.setItemIds(itemIds);
         return r;
     }
@@ -202,6 +205,7 @@ public class DiscountServiceImpl implements DiscountService {
         r.setStartDate(formatDate(d.getStartDate()));
         r.setEndDate(formatDate(d.getEndDate()));
         r.setDiscountStatus(d.getStatus());
+        r.setDiscountImage(d.getDiscountImage());
         r.setOutletId(outletId);
         r.setOutletName(outletName);
         r.setItemIds(itemIds);

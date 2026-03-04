@@ -8,6 +8,9 @@ target/
 find-it-8283f-firebase-adminsdk-fbsvc-44f6d583fc.json
 **/find-it-8283f-firebase-adminsdk-fbsvc-44f6d583fc.json
 
+### Uploaded images (do not commit) ###
+/images/
+
 ### STS ###
 .apt_generated
 .classpath

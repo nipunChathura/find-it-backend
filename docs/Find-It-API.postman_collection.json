@@ -2,7 +2,7 @@
   "info": {
     "name": "Find It API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Get by outlet (GET /api/items/outlet/{outletId}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns outletId, outletName, itemIds and items. Optional filters: status, itemId, outletId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; GET /api/notifications/user/{userId} — all notifications for user; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
+    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Get by outlet (GET /api/items/outlet/{outletId}), Search (GET with query params), Update (PUT), Delete (DELETE). **Images:** POST /api/images/upload — multipart file + type (profile, items, receipt); saves under project images/{type}/ with unique filename; response: fileName, type, relativePath. GET /api/images/show?type=&fileName= — returns image file by type and fileName.\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns outletId, outletName, itemIds and items. Optional filters: status, itemId, outletId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. Optional: paymentDate, paidMonth, receiptImage, status (PENDING | ACTIVE | APPROVED). **Create payment:** If status is ACTIVE or APPROVED — outlet subscriptionValidUntil extended by 1 month; if PENDING — no date change. Outlet status then set by subscription: subscriptionValidUntil ≥ today → ACTIVE; subscriptionValidUntil < paid date → PENDING_SUBSCRIPTION; else → EXPIRED_SUBSCRIPTION. List filter: outletId, status. **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; GET /api/notifications/user/{userId} — all notifications for user; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:9090/find-it" },
@@ -723,6 +723,36 @@
       ]
     },
     {
+      "name": "Images",
+      "item": [
+        {
+          "name": "Upload image",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "", "description": "Image file (JPEG, PNG, GIF, WebP)" },
+                { "key": "type", "value": "profile", "type": "text", "description": "Folder type: profile, items, or receipt" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/images/upload",
+            "description": "Upload image as multipart. Required: file (image), type (profile | items | receipt). Saves under project images/{type}/ with a unique filename. Response: fileName, type, relativePath."
+          }
+        },
+        {
+          "name": "Show image",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/images/show?type=profile&fileName=unique-filename.jpg",
+            "description": "Returns the image file. Query: type (profile | items | receipt), fileName (e.g. uuid.jpg from Upload image response). Replace type and fileName with values from Upload image. Response: image binary (JPEG/PNG/GIF/WebP). JWT required."
+          }
+        }
+      ]
+    },
+    {
       "name": "Payments",
       "item": [
         {
@@ -733,9 +763,9 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"outletId\": 1,\n  \"paymentType\": \"SUBSCRIPTION\",\n  \"amount\": 5000.00,\n  \"paymentDate\": \"2026-03-01\",\n  \"paidMonth\": \"2026-03\",\n  \"receiptImage\": null,\n  \"status\": \"PENDING\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"outletId\": 1,\n  \"paymentType\": \"SUBSCRIPTION\",\n  \"amount\": 5000.00,\n  \"paymentDate\": \"2026-03-01\",\n  \"paidMonth\": \"2026-03\",\n  \"receiptImage\": null,\n  \"status\": \"ACTIVE\"\n}" },
             "url": "{{baseUrl}}/api/payments",
-            "description": "Required: outletId, paymentType, amount. Optional: paymentDate (yyyy-MM-dd), paidMonth, receiptImage, status (default PENDING)."
+            "description": "Required: outletId, paymentType, amount. Optional: paymentDate (yyyy-MM-dd), paidMonth, receiptImage, status (PENDING | ACTIVE | APPROVED; default PENDING). If status is ACTIVE or APPROVED: outlet subscriptionValidUntil extended by 1 month; outlet status set by subscription date (ACTIVE / PENDING_SUBSCRIPTION / EXPIRED_SUBSCRIPTION). If PENDING: subscription date unchanged."
           }
         },
         {

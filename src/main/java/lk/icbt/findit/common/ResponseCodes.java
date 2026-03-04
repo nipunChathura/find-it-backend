@@ -50,4 +50,6 @@ public class ResponseCodes {
     public static final String CUSTOMER_EMAIL_ALREADY_EXISTS_CODE = "6102";
     public static final String NOTIFICATION_NOT_FOUND_CODE = "6301";
     public static final String FIREBASE_MESSAGING_ERROR_CODE = "6302";
+    public static final String IMAGE_UPLOAD_INVALID_TYPE_CODE = "6401";
+    public static final String IMAGE_UPLOAD_INVALID_FILE_CODE = "6402";
 }

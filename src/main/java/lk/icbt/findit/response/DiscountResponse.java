@@ -18,5 +18,6 @@ public class DiscountResponse extends Response {
     private String startDate;      // ISO date
     private String endDate;        // ISO date
     private String discountStatus; // ACTIVE, INACTIVE, etc.
+    private String discountImage;
     private List<Long> itemIds;
 }

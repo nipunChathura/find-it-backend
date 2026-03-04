@@ -19,4 +19,5 @@ public class CustomerLoginResponse extends Response {
     private String userStatus;
     private Role role;
     private Long customerId;
+    private String profileImageUrl;
 }

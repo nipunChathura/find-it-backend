@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lk.icbt.findit.dto.ForgotPasswordApprovalDTO;
 import lk.icbt.findit.dto.LoginDTO;
 import lk.icbt.findit.dto.UserRegistrationDTO;
+import lk.icbt.findit.request.ProfileImageChangeRequest;
 import lk.icbt.findit.request.UserRequest;
 import lk.icbt.findit.response.UserResponse;
 import lk.icbt.findit.service.UserService;
@@ -12,6 +13,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -62,6 +64,16 @@ public class UserController {
         UserResponse response = new UserResponse();
         mapResultToResponse(result, response);
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'USER', 'CUSTOMER')")
+    @PutMapping(value = "/{userId}/profile-image", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<UserResponse> changeProfileImage(
+            @PathVariable Long userId,
+            @Valid @RequestBody ProfileImageChangeRequest request) {
+        UserResponse result = userService.changeProfileImage(userId, request.getFileName());
+        return ResponseEntity.ok(result);
     }
 
     private void mapResultToResponse(lk.icbt.findit.response.Response result, UserResponse response) {

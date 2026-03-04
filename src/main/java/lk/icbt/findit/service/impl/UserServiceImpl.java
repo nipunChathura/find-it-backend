@@ -134,6 +134,7 @@ public class UserServiceImpl implements UserService {
         result.setRole(loginResult.getRole());
         result.setMerchantId(user.getMerchantId());
         result.setSubMerchantId(user.getSubMerchantId());
+        result.setProfileImageUrl(loginResult.getProfileImageUrl());
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginMerchant", "userId", user.getUserId());
         return result;
     }
@@ -191,6 +192,7 @@ public class UserServiceImpl implements UserService {
         result.setUserStatus(user.getStatus());
         result.setRole(user.getRole());
         result.setCustomerId(user.getCustomerId());
+        result.setProfileImageUrl(user.getProfileImageUrl());
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginCustomer", "userId", user.getUserId());
         return result;
     }
@@ -603,5 +605,35 @@ public class UserServiceImpl implements UserService {
         result.setResponseMessage("Password reset approved. User is now active.");
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "approveForgotPassword", "userId", user.getUserId());
         return result;
+    }
+
+    @Override
+    @Transactional
+    public UserResponse changeProfileImage(Long userId, String fileName) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "changeProfileImage", "userId", userId);
+        if (fileName == null || fileName.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Image file name is required");
+        }
+        String trimmed = fileName.trim();
+        if (trimmed.contains("..") || trimmed.contains("/") || trimmed.contains("\\")) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Invalid file name");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    ServiceLoggingHelper.logValidationError(log, ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                    return new InvalidRequestException(ResponseCodes.USER_NOT_FOUND_CODE, "User not found");
+                });
+        String profileImageUrl = "profile/" + trimmed;
+        user.setProfileImageUrl(profileImageUrl);
+        user.setModifiedDatetime(new Date());
+        userRepository.save(user);
+        UserResponse response = new UserResponse();
+        response.setStatus(ResponseStatus.SUCCESS.getStatus());
+        response.setResponseCode(ResponseCodes.SUCCESS_CODE);
+        response.setResponseMessage("Profile image updated successfully.");
+        response.setUserId(user.getUserId());
+        response.setProfileImageUrl(user.getProfileImageUrl());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "changeProfileImage", "userId", user.getUserId());
+        return response;
     }
 }
