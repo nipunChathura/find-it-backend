@@ -21,6 +21,8 @@ public class ItemResponse extends Response {
     private String outletName;
     private BigDecimal price;
     private Boolean availability;
+    /** True if the item has at least one active discount (status ACTIVE, current date within start/end). */
+    private Boolean discountAvailability;
     private String itemImage;
     private String status;
 }

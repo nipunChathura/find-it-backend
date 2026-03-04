@@ -6,10 +6,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 
 @Repository
 public interface DiscountItemRepository extends JpaRepository<DiscountItem, Long> {
+
+    @Query("SELECT DISTINCT di.item.itemId FROM DiscountItem di WHERE di.item.itemId IN :itemIds " +
+            "AND di.discount.status = 'ACTIVE' AND di.discount.startDate <= :now " +
+            "AND (di.discount.endDate IS NULL OR di.discount.endDate >= :now)")
+    List<Long> findItemIdsWithActiveDiscount(@Param("itemIds") List<Long> itemIds, @Param("now") Date now);
 
     List<DiscountItem> findByDiscount_DiscountId(Long discountId);
 
