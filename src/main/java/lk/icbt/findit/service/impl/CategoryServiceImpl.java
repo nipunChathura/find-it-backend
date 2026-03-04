@@ -100,7 +100,8 @@ public class CategoryServiceImpl implements CategoryService {
                         ResponseCodes.CATEGORY_NOT_FOUND_CODE,
                         "Category not found"
                 ));
-        categoryRepository.delete(category);
+        category.setStatus(Constants.CATEGORY_DELETED_STATUS);
+        categoryRepository.save(category);
         CategoryDTO result = new CategoryDTO();
         result.setStatus(ResponseStatus.SUCCESS.getStatus());
         result.setResponseCode(ResponseCodes.SUCCESS_CODE);

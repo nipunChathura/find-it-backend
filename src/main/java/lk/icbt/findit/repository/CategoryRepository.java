@@ -13,6 +13,7 @@ import java.util.List;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     @Query("SELECT c FROM Category c WHERE " +
+            "c.status <> 'DELETED' AND " +
             "(:name IS NULL OR :name = '' OR LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
             "(:categoryType IS NULL OR c.categoryType = :categoryType) AND " +
             "(:status IS NULL OR :status = '' OR c.status = :status)")

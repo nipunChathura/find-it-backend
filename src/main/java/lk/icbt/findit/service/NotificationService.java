@@ -19,6 +19,11 @@ public interface NotificationService {
 
     List<NotificationResponse> getUnreadNotifications(Long userId);
 
+    /**
+     * Get all notifications for a user (read and unread), ordered by created date descending.
+     */
+    List<NotificationResponse> getNotificationsByUserId(Long userId);
+
     NotificationResponse markAsRead(Long notificationId);
 
     List<NotificationResponse> getNotificationsByType(Long userId, String type);

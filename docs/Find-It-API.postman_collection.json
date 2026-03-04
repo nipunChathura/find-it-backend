@@ -2,7 +2,7 @@
   "info": {
     "name": "Find It API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns itemIds and items (itemId, itemName). Optional filters: status, itemId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
+    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Get by outlet (GET /api/items/outlet/{outletId}), Search (GET with query params), Update (PUT), Delete (DELETE).\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns outletId, outletName, itemIds and items. Optional filters: status, itemId, outletId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. List filter: outletId, status (PENDING/APPROVED/REJECTED). **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; GET /api/notifications/user/{userId} — all notifications for user; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:9090/find-it" },
@@ -623,6 +623,15 @@
           }
         },
         {
+          "name": "Get items by outlet ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/items/outlet/1",
+            "description": "Returns all items for the given outlet ID (ordered by item name). SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT. JWT required."
+          }
+        },
+        {
           "name": "Search items",
           "request": {
             "method": "GET",
@@ -685,8 +694,8 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/discounts?status=&itemId=",
-            "description": "Optional: status, itemId (filter by item). Response includes itemIds and items (array of itemId, itemName)."
+            "url": "{{baseUrl}}/api/discounts?status=&itemId=&outletId=",
+            "description": "Optional: status, itemId (filter by item), outletId (filter by outlet — returns discounts that have at least one item from that outlet). Response includes outletId, outletName, itemIds and items."
           }
         },
         {
@@ -794,6 +803,15 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/notifications/unread/1",
             "description": "Returns unread notifications for the given userId."
+          }
+        },
+        {
+          "name": "Get notifications by user ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/user/1",
+            "description": "Returns all notifications for the given userId (read and unread), newest first. JWT required; accessible by all roles (user, merchant, sub-merchant, admin)."
           }
         },
         {

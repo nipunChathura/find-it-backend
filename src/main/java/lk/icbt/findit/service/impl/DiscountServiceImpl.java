@@ -68,14 +68,16 @@ public class DiscountServiceImpl implements DiscountService {
     }
 
     @Override
-    public List<DiscountListItemResponse> list(String status, Long itemId) {
+    public List<DiscountListItemResponse> list(String status, Long itemId, Long outletId) {
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : null;
-        List<Discount> list = discountRepository.findAllWithFilters(statusParam, itemId);
+        List<Discount> list = discountRepository.findAllWithFilters(statusParam, itemId, outletId);
         if (list.isEmpty()) return Collections.emptyList();
         List<Long> discountIds = list.stream().map(Discount::getDiscountId).collect(Collectors.toList());
         List<DiscountItem> allItems = discountItemRepository.findByDiscount_DiscountIdInWithItem(discountIds);
         Map<Long, List<Long>> itemIdsByDiscount = new HashMap<>();
         Map<Long, List<ItemIdNameResponse>> itemsByDiscount = new HashMap<>();
+        Map<Long, Long> outletIdByDiscount = new HashMap<>();
+        Map<Long, String> outletNameByDiscount = new HashMap<>();
         for (DiscountItem di : allItems) {
             Long did = di.getDiscount().getDiscountId();
             itemIdsByDiscount.computeIfAbsent(did, k -> new ArrayList<>()).add(di.getItem().getItemId());
@@ -85,11 +87,17 @@ public class DiscountServiceImpl implements DiscountService {
                             .itemId(di.getItem().getItemId())
                             .itemName(di.getItem().getItemName())
                             .build());
+            if (di.getItem().getOutlet() != null) {
+                outletIdByDiscount.putIfAbsent(did, di.getItem().getOutlet().getOutletId());
+                outletNameByDiscount.putIfAbsent(did, di.getItem().getOutlet().getOutletName());
+            }
         }
         return list.stream()
                 .map(d -> toListItem(d,
                         itemIdsByDiscount.getOrDefault(d.getDiscountId(), Collections.emptyList()),
-                        itemsByDiscount.getOrDefault(d.getDiscountId(), Collections.emptyList())))
+                        itemsByDiscount.getOrDefault(d.getDiscountId(), Collections.emptyList()),
+                        outletIdByDiscount.get(d.getDiscountId()),
+                        outletNameByDiscount.get(d.getDiscountId())))
                 .collect(Collectors.toList());
     }
 
@@ -185,7 +193,7 @@ public class DiscountServiceImpl implements DiscountService {
         return r;
     }
 
-    private DiscountListItemResponse toListItem(Discount d, List<Long> itemIds, List<ItemIdNameResponse> items) {
+    private DiscountListItemResponse toListItem(Discount d, List<Long> itemIds, List<ItemIdNameResponse> items, Long outletId, String outletName) {
         DiscountListItemResponse r = new DiscountListItemResponse();
         r.setDiscountId(d.getDiscountId());
         r.setDiscountName(d.getDiscountName());
@@ -194,6 +202,8 @@ public class DiscountServiceImpl implements DiscountService {
         r.setStartDate(formatDate(d.getStartDate()));
         r.setEndDate(formatDate(d.getEndDate()));
         r.setDiscountStatus(d.getStatus());
+        r.setOutletId(outletId);
+        r.setOutletName(outletName);
         r.setItemIds(itemIds);
         r.setItems(items);
         return r;

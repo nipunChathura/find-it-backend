@@ -45,8 +45,9 @@ public class DiscountController {
     @ResponseBody
     public ResponseEntity<List<DiscountListItemResponse>> list(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long itemId) {
-        List<DiscountListItemResponse> list = discountService.list(status, itemId);
+            @RequestParam(required = false) Long itemId,
+            @RequestParam(required = false) Long outletId) {
+        List<DiscountListItemResponse> list = discountService.list(status, itemId, outletId);
         return ResponseEntity.ok(list);
     }
 

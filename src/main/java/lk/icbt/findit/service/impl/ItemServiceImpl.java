@@ -67,6 +67,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public List<ItemListItemResponse> getByOutletId(Long outletId) {
+        if (outletId == null) {
+            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Outlet ID is required");
+        }
+        outletRepository.findById(outletId)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.OUTLET_NOT_FOUND_CODE, "Outlet not found"));
+        List<Item> list = itemRepository.findByOutletId(outletId);
+        return list.stream().map(this::toListItem).collect(Collectors.toList());
+    }
+
+    @Override
     public List<ItemListItemResponse> search(String search, Long categoryId, Long outletId, String status, Boolean availability) {
         String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : null;

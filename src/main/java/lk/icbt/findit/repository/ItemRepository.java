@@ -11,6 +11,9 @@ import java.util.List;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
+    @Query("SELECT i FROM Item i LEFT JOIN FETCH i.category LEFT JOIN FETCH i.outlet WHERE i.outlet.outletId = :outletId ORDER BY i.itemName")
+    List<Item> findByOutletId(@Param("outletId") Long outletId);
+
     @Query("SELECT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o WHERE " +
             "(:search IS NULL OR :search = '' OR LOWER(i.itemName) LIKE LOWER(CONCAT('%', :search, '%')) " +
             "OR LOWER(i.itemDescription) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +

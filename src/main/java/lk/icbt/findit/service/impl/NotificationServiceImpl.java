@@ -74,6 +74,12 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public List<NotificationResponse> getNotificationsByUserId(Long userId) {
+        List<Notification> list = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return list.stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public NotificationResponse markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)

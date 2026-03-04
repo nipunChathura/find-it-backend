@@ -12,7 +12,7 @@ public interface DiscountService {
 
     DiscountResponse getById(Long discountId);
 
-    List<DiscountListItemResponse> list(String status, Long itemId);
+    List<DiscountListItemResponse> list(String status, Long itemId, Long outletId);
 
     DiscountResponse update(Long discountId, DiscountRequest request);
 

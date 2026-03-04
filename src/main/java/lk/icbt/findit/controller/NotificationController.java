@@ -40,6 +40,14 @@ public class NotificationController {
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'USER', 'CUSTOMER')")
+    @GetMapping(value = "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<NotificationResponse>> getByUserId(@PathVariable Long userId) {
+        List<NotificationResponse> list = notificationService.getNotificationsByUserId(userId);
+        return ResponseEntity.ok(list);
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'USER', 'CUSTOMER')")
     @PostMapping(value = "/read/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<NotificationResponse> markAsRead(@PathVariable Long id) {

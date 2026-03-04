@@ -33,6 +33,14 @@ public class ItemController {
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
+    @GetMapping(value = "/outlet/{outletId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<ItemListItemResponse>> getByOutletId(@PathVariable Long outletId) {
+        List<ItemListItemResponse> list = itemService.getByOutletId(outletId);
+        return ResponseEntity.ok(list);
+    }
+
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "/{itemId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<ItemResponse> getById(@PathVariable Long itemId) {

@@ -12,6 +12,8 @@ public interface ItemService {
 
     ItemResponse getById(Long itemId);
 
+    List<ItemListItemResponse> getByOutletId(Long outletId);
+
     List<ItemListItemResponse> search(String search, Long categoryId, Long outletId, String status, Boolean availability);
 
     ItemResponse update(Long itemId, ItemRequest request);
