@@ -17,6 +17,11 @@ public interface DiscountItemRepository extends JpaRepository<DiscountItem, Long
             "AND (di.discount.endDate IS NULL OR di.discount.endDate >= :now)")
     List<Long> findItemIdsWithActiveDiscount(@Param("itemIds") List<Long> itemIds, @Param("now") Date now);
 
+    /** Fetch DiscountItem with discount for items that have an active discount (status ACTIVE, current date within start/end). One row per item-discount; same item may appear if in multiple discounts - caller may take first per item. */
+    @Query("SELECT di FROM DiscountItem di JOIN FETCH di.discount d JOIN FETCH di.item WHERE di.item.itemId IN :itemIds " +
+            "AND d.status = 'ACTIVE' AND d.startDate <= :now AND (d.endDate IS NULL OR d.endDate >= :now)")
+    List<DiscountItem> findByItemItemIdInAndDiscountActiveAndDateValid(@Param("itemIds") List<Long> itemIds, @Param("now") Date now);
+
     List<DiscountItem> findByDiscount_DiscountId(Long discountId);
 
     List<DiscountItem> findByDiscount_DiscountIdIn(List<Long> discountIds);

@@ -23,8 +23,7 @@ public class NearestOutletSearchRequest {
     @DecimalMax(value = "180", message = "Longitude must be between -180 and 180")
     private Double longitude;
 
-    /** Item name to search (partial match). */
-    @NotNull(message = "Item name is required")
+    /** Item name to search (partial match). Optional: when null or empty, returns all outlets within distance with their available items. */
     private String itemName;
 
     /** Maximum distance from customer location in kilometres. Only outlets within this distance are returned. */

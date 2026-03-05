@@ -10,6 +10,8 @@ import lk.icbt.findit.response.CustomerListItemResponse;
 import lk.icbt.findit.response.CustomerLoginResponse;
 import lk.icbt.findit.response.CustomerOnboardingResponse;
 import lk.icbt.findit.response.CustomerResponse;
+import lk.icbt.findit.response.CustomerSearchHistoryResponse;
+import lk.icbt.findit.service.CustomerSearchHistoryService;
 import lk.icbt.findit.service.CustomerService;
 import lk.icbt.findit.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class CustomerController {
 
     private final CustomerService customerService;
     private final UserService userService;
+    private final CustomerSearchHistoryService customerSearchHistoryService;
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -65,6 +68,15 @@ public class CustomerController {
     public ResponseEntity<CustomerResponse> getById(@PathVariable Long customerId) {
         CustomerResponse result = customerService.getById(customerId);
         return ResponseEntity.ok(result);
+    }
+
+    /** Get search history list for the given customer (by customerId). Newest first. SYSADMIN, ADMIN only. */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
+    @GetMapping(value = "/{customerId}/search-history", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<CustomerSearchHistoryResponse>> getSearchHistoryByCustomerId(@PathVariable Long customerId) {
+        List<CustomerSearchHistoryResponse> list = customerSearchHistoryService.listByCustomerId(customerId);
+        return ResponseEntity.ok(list);
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")

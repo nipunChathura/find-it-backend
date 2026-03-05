@@ -18,4 +18,10 @@ public class NearestOutletItemDetailResponse {
     private Boolean availability;
     private String itemImage;
     private String status;
+    /** True if the item has at least one active discount (current date within start/end). */
+    private Boolean discountAvailable;
+    /** Name of the applied discount when discountAvailable is true. */
+    private String discountName;
+    /** Price after discount when discountAvailable is true. */
+    private BigDecimal offerPrice;
 }

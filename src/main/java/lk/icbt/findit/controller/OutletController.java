@@ -6,11 +6,16 @@ import lk.icbt.findit.request.OutletAddRequest;
 import lk.icbt.findit.request.OutletScheduleRequest;
 import lk.icbt.findit.request.OutletUpdateRequest;
 import lk.icbt.findit.response.MessageResponse;
+import lk.icbt.findit.response.DiscountListItemResponse;
 import lk.icbt.findit.response.OutletListResponse;
 import lk.icbt.findit.response.OutletResponse;
 import lk.icbt.findit.response.OutletScheduleItemResponse;
 import lk.icbt.findit.response.OutletSchedulesGroupedResponse;
 import lk.icbt.findit.response.OutletStatusResponse;
+import lk.icbt.findit.response.FeedbackResponse;
+import lk.icbt.findit.response.OutletFeedbackCountResponse;
+import lk.icbt.findit.service.DiscountService;
+import lk.icbt.findit.service.FeedbackService;
 import lk.icbt.findit.service.OutletScheduleService;
 import lk.icbt.findit.service.OutletService;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +44,8 @@ public class OutletController {
 
     private final OutletService outletService;
     private final OutletScheduleService outletScheduleService;
+    private final DiscountService discountService;
+    private final FeedbackService feedbackService;
 
     /** 1. List outlets. Query: name (optional), status (optional). Response includes currentStatus (OPEN/CLOSED). */
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
@@ -102,6 +109,31 @@ public class OutletController {
         response.setOutletStatus(result.getOutletStatus());
         response.setSubscriptionValidUntil(result.getSubscriptionValidUntil());
         return ResponseEntity.ok(response);
+    }
+
+    /** Get current available discounts for the given outlet (ACTIVE and today within startDate–endDate). */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
+    @GetMapping(value = "/{outletId}/discounts", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<DiscountListItemResponse>> getOutletDiscounts(@PathVariable Long outletId) {
+        List<DiscountListItemResponse> list = discountService.listCurrentByOutletId(outletId);
+        return ResponseEntity.ok(list);
+    }
+
+    /** Get list of feedbacks for the given outlet (newest first). */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
+    @GetMapping(value = "/{outletId}/feedbacks", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<FeedbackResponse>> getOutletFeedbacks(@PathVariable Long outletId) {
+        return ResponseEntity.ok(feedbackService.listByOutletId(outletId));
+    }
+
+    /** Get feedback count for the given outlet. */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
+    @GetMapping(value = "/{outletId}/feedbacks/count", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<OutletFeedbackCountResponse> getOutletFeedbackCount(@PathVariable Long outletId) {
+        return ResponseEntity.ok(feedbackService.getOutletFeedbackCount(outletId));
     }
 
     // ---------- Outlet opening hours / schedule ----------

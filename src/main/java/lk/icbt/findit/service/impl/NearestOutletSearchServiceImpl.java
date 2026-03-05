@@ -1,12 +1,17 @@
 package lk.icbt.findit.service.impl;
 
-import lk.icbt.findit.common.Constants;
 import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.common.ResponseStatus;
+import lk.icbt.findit.entity.CustomerFavorite;
+import lk.icbt.findit.entity.Discount;
+import lk.icbt.findit.entity.DiscountItem;
+import lk.icbt.findit.entity.DiscountType;
 import lk.icbt.findit.entity.Item;
 import lk.icbt.findit.entity.Outlet;
 import lk.icbt.findit.entity.OutletType;
 import lk.icbt.findit.exception.InvalidRequestException;
+import lk.icbt.findit.repository.CustomerFavoriteRepository;
+import lk.icbt.findit.repository.DiscountItemRepository;
 import lk.icbt.findit.repository.ItemRepository;
 import lk.icbt.findit.request.NearestOutletSearchRequest;
 import lk.icbt.findit.response.NearestOutletItemDetailResponse;
@@ -19,7 +24,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,16 +38,17 @@ import java.util.stream.Collectors;
 public class NearestOutletSearchServiceImpl implements NearestOutletSearchService {
 
     private static final double EARTH_RADIUS_KM = 6371.0;
+    /** Default maximum number of outlets returned (nearest first). */
+    private static final int DEFAULT_MAX_RESULTS = 20;
 
     private final ItemRepository itemRepository;
+    private final DiscountItemRepository discountItemRepository;
     private final OutletScheduleService outletScheduleService;
+    private final CustomerFavoriteRepository customerFavoriteRepository;
 
     @Override
-    public NearestOutletSearchResponse searchNearestOutlets(NearestOutletSearchRequest request) {
-        String itemName = request.getItemName() != null ? request.getItemName().trim() : "";
-        if (itemName.isEmpty()) {
-            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Item name is required");
-        }
+    public NearestOutletSearchResponse searchNearestOutlets(NearestOutletSearchRequest request, Long customerId) {
+        String itemName = request.getItemName() != null ? request.getItemName().trim() : null;
 
         OutletType outletType = null;
         if (request.getOutletType() != null && !request.getOutletType().isBlank()) {
@@ -49,19 +59,35 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
             }
         }
 
-        List<Item> items = itemRepository.findForNearestOutletSearch(
-                itemName,
-                request.getCategoryId(),
-                outletType
-        );
+        List<Item> items;
+        if (itemName != null && !itemName.isEmpty()) {
+            items = itemRepository.findForNearestOutletSearch(
+                    itemName,
+                    request.getCategoryId(),
+                    outletType
+            );
+        } else {
+            items = itemRepository.findForNearestOutletSearchAllItems(
+                    request.getCategoryId(),
+                    outletType
+            );
+        }
 
         if (items.isEmpty()) {
             NearestOutletSearchResponse response = new NearestOutletSearchResponse();
             response.setStatus(ResponseStatus.SUCCESS.getStatus());
             response.setResponseCode(ResponseCodes.SUCCESS_CODE);
-            response.setResponseMessage("No outlets found with matching items.");
+            response.setResponseMessage(itemName != null ? "No outlets found with matching items." : "No outlets found within criteria.");
             response.setOutlets(Collections.emptyList());
             return response;
+        }
+
+        List<Long> itemIds = items.stream().map(Item::getItemId).distinct().collect(Collectors.toList());
+        Date nowDate = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        List<DiscountItem> discountItems = discountItemRepository.findByItemItemIdInAndDiscountActiveAndDateValid(itemIds, nowDate);
+        Map<Long, Discount> itemIdToDiscount = new HashMap<>();
+        for (DiscountItem di : discountItems) {
+            itemIdToDiscount.putIfAbsent(di.getItem().getItemId(), di.getDiscount());
         }
 
         double custLat = request.getLatitude();
@@ -85,6 +111,7 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
                 continue;
             }
 
+            // Open/closed from outlet_schedule by schedule type: NORMAL, EMERGENCY, TEMPORARY, DAILY
             OutletStatusResponse statusResponse = outletScheduleService.getOutletStatus(outletId, now);
             if (!OutletStatusResponse.STATUS_OPEN.equals(statusResponse.getStatus())) {
                 continue;
@@ -105,22 +132,47 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
             resultItem.setRating(outlet.getRating());
             resultItem.setDistanceKm(round(distanceKm, 2));
             resultItem.setCurrentStatus(statusResponse.getStatus());
+            resultItem.setScheduleType(statusResponse.getScheduleType());
 
             List<NearestOutletItemDetailResponse> itemDetails = outletItems.stream()
-                    .map(this::toItemDetail)
+                    .map(item -> toItemDetail(item, itemIdToDiscount))
                     .collect(Collectors.toList());
             resultItem.setItems(itemDetails);
 
             results.add(resultItem);
         }
 
+        // Join with customer_favorite: set is_favorite, customer_favorite_id, nickname per outlet
+        Map<Long, CustomerFavorite> outletIdToFavorite = new HashMap<>();
+        if (customerId != null && !results.isEmpty()) {
+            List<Long> outletIds = results.stream().map(NearestOutletResultItem::getOutletId).distinct().collect(Collectors.toList());
+            List<CustomerFavorite> favorites = customerFavoriteRepository.findByCustomer_CustomerIdAndOutlet_OutletIdIn(customerId, outletIds);
+            for (CustomerFavorite f : favorites) {
+                if (f.getOutlet() != null) {
+                    outletIdToFavorite.put(f.getOutlet().getOutletId(), f);
+                }
+            }
+        }
+        for (NearestOutletResultItem item : results) {
+            CustomerFavorite fav = outletIdToFavorite.get(item.getOutletId());
+            item.setIsFavorite(fav != null);
+            if (fav != null) {
+                item.setCustomerFavoriteId(fav.getId());
+                item.setNickname(fav.getNickname());
+            }
+        }
+
         results.sort(Comparator.comparingDouble(NearestOutletResultItem::getDistanceKm));
+
+        List<NearestOutletResultItem> limited = results.size() <= DEFAULT_MAX_RESULTS
+                ? results
+                : results.subList(0, DEFAULT_MAX_RESULTS);
 
         NearestOutletSearchResponse response = new NearestOutletSearchResponse();
         response.setStatus(ResponseStatus.SUCCESS.getStatus());
         response.setResponseCode(ResponseCodes.SUCCESS_CODE);
         response.setResponseMessage("Search completed.");
-        response.setOutlets(results);
+        response.setOutlets(limited);
         return response;
     }
 
@@ -140,7 +192,7 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
         return (double) Math.round(value * factor) / factor;
     }
 
-    private NearestOutletItemDetailResponse toItemDetail(Item item) {
+    private NearestOutletItemDetailResponse toItemDetail(Item item, Map<Long, Discount> itemIdToDiscount) {
         NearestOutletItemDetailResponse d = new NearestOutletItemDetailResponse();
         d.setItemId(item.getItemId());
         d.setItemName(item.getItemName());
@@ -152,6 +204,29 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
         if (item.getCategory() != null) {
             d.setCategoryName(item.getCategory().getCategoryName());
         }
+        Discount discount = itemIdToDiscount.get(item.getItemId());
+        if (discount != null && item.getPrice() != null) {
+            d.setDiscountAvailable(true);
+            d.setDiscountName(discount.getDiscountName());
+            d.setOfferPrice(computeOfferPrice(item.getPrice(), discount));
+        } else {
+            d.setDiscountAvailable(Boolean.FALSE);
+        }
         return d;
+    }
+
+    private BigDecimal computeOfferPrice(BigDecimal price, Discount discount) {
+        if (price == null || discount == null || discount.getDiscountValue() == null) {
+            return price;
+        }
+        if (discount.getDiscountType() == DiscountType.PERCENTAGE) {
+            double pct = 1.0 - (discount.getDiscountValue() / 100.0);
+            return price.multiply(BigDecimal.valueOf(pct)).setScale(2, RoundingMode.HALF_UP);
+        }
+        if (discount.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+            BigDecimal reduced = price.subtract(BigDecimal.valueOf(discount.getDiscountValue()));
+            return reduced.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : reduced.setScale(2, RoundingMode.HALF_UP);
+        }
+        return price;
     }
 }

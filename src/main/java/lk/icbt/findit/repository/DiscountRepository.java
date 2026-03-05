@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -20,4 +21,11 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
             "AND (:outletId IS NULL OR d.discountId IN (SELECT di2.discount.discountId FROM DiscountItem di2 WHERE di2.item.outlet.outletId = :outletId)) " +
             "ORDER BY d.discountId")
     List<Discount> findAllWithFilters(@Param("status") String status, @Param("itemId") Long itemId, @Param("outletId") Long outletId);
+
+    /** ACTIVE discounts for the given outlet that are currently valid (today between startDate and endDate, or no dates set). */
+    @Query("SELECT DISTINCT d FROM Discount d JOIN d.discountItems di WHERE d.status = 'ACTIVE' " +
+            "AND di.item.outlet.outletId = :outletId " +
+            "AND (d.startDate IS NULL OR d.startDate <= :today) AND (d.endDate IS NULL OR d.endDate >= :today) " +
+            "ORDER BY d.discountId")
+    List<Discount> findActiveByOutletIdAndDateValid(@Param("outletId") Long outletId, @Param("today") Date today);
 }

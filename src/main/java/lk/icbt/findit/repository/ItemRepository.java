@@ -41,5 +41,15 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("categoryId") Long categoryId,
             @Param("outletType") OutletType outletType);
 
+    /** For nearest-outlet search when no item name: all available items; outlet active with lat/long; optional category and outlet type. */
+    @Query("SELECT DISTINCT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o " +
+            "WHERE i.availability = true AND i.status = 'ACTIVE' " +
+            "AND o.status = 'ACTIVE' AND o.latitude IS NOT NULL AND o.longitude IS NOT NULL " +
+            "AND (:categoryId IS NULL OR c.categoryId = :categoryId) " +
+            "AND (:outletType IS NULL OR o.outletType = :outletType)")
+    List<Item> findForNearestOutletSearchAllItems(
+            @Param("categoryId") Long categoryId,
+            @Param("outletType") OutletType outletType);
+
     long countByStatusNot(String itemDeletedStatus);
 }

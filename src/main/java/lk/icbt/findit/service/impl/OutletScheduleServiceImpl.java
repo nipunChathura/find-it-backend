@@ -37,13 +37,20 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
     private final OutletScheduleRepository scheduleRepository;
     private final HolidayRepository holidayRepository;
 
+    /**
+     * Determines if outlet is OPEN or CLOSED using outlet_schedule by schedule type.
+     * Resolution order (outlet_schedule): TEMPORARY → EMERGENCY/DAILY → NORMAL. Holiday → closed.
+     * - NORMAL: day_of_week = today's weekday (recurring weekly).
+     * - EMERGENCY / DAILY: special_date = today (one-off or daily override).
+     * - TEMPORARY: today within start_date and end_date (date range override).
+     */
     @Override
     public OutletStatusResponse getOutletStatus(Long outletId, LocalDateTime checkTime) {
         ensureOutletExists(outletId);
         LocalDate date = checkTime.toLocalDate();
         LocalTime time = checkTime.toLocalTime();
 
-        OutletSchedule match = findApplicableSchedule(outletId, date);
+        OutletSchedule match = findApplicableScheduleByType(outletId, date);
         if (match == null) {
             String reason = getHolidayReason(date);
             if (reason == null) reason = "No schedule defined";
@@ -51,16 +58,20 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
                     .isClosed("Y")
+                    .scheduleType(null)
                     .reason(reason)
                     .todaySchedule(getTodaysSchedule(outletId, date))
                     .build();
         }
+
+        String scheduleTypeName = match.getScheduleType() != null ? match.getScheduleType().name() : null;
 
         if (match.isClosed()) {
             return OutletStatusResponse.builder()
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
                     .isClosed("Y")
+                    .scheduleType(scheduleTypeName)
                     .openTime(match.getOpenTime())
                     .closeTime(match.getCloseTime())
                     .reason(match.getReason())
@@ -75,6 +86,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
                     .isClosed("Y")
+                    .scheduleType(scheduleTypeName)
                     .reason("Opening hours not set")
                     .openTime(match.getOpenTime())
                     .closeTime(match.getCloseTime())
@@ -87,6 +99,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
                 .outletId(outletId)
                 .status(openNow ? OutletStatusResponse.STATUS_OPEN : OutletStatusResponse.STATUS_CLOSED)
                 .isClosed(openNow ? "N" : "Y")
+                .scheduleType(scheduleTypeName)
                 .openTime(match.getOpenTime())
                 .closeTime(match.getCloseTime())
                 .reason(openNow ? null : "Outside opening hours")
@@ -204,26 +217,42 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
         scheduleRepository.save(schedule);
     }
 
-    /** Priority: TEMPORARY → EMERGENCY/DAILY → NORMAL. Holiday overrides NORMAL (outlet closed). */
-    private OutletSchedule findApplicableSchedule(Long outletId, LocalDate date) {
-        List<OutletSchedule> temp = scheduleRepository.findTemporaryByOutletAndDate(outletId, date);
-        if (!temp.isEmpty()) {
-            return temp.stream().max(Comparator.comparing(OutletSchedule::getPriority, Comparator.nullsLast(Comparator.naturalOrder()))).orElse(temp.get(0));
+    /**
+     * Resolves which outlet_schedule row applies for the given date, by schedule type.
+     * Order: TEMPORARY → EMERGENCY/DAILY → (holiday → closed) → NORMAL.
+     * - TEMPORARY: date between start_date and end_date (inclusive).
+     * - EMERGENCY / DAILY: special_date = date (single-day override).
+     * - NORMAL: day_of_week = date's weekday (weekly recurring).
+     * Only ACTIVE, non-DELETED schedules are considered (repository filters).
+     */
+    private OutletSchedule findApplicableScheduleByType(Long outletId, LocalDate date) {
+        // 1) TEMPORARY: date range (start_date .. end_date)
+        List<OutletSchedule> temporary = scheduleRepository.findTemporaryByOutletAndDate(outletId, date);
+        if (!temporary.isEmpty()) {
+            return selectByPriority(temporary);
         }
-        List<OutletSchedule> special = scheduleRepository.findSpecialDateByOutletAndDate(outletId, date);
-        if (!special.isEmpty()) {
-            return special.stream().max(Comparator.comparing(OutletSchedule::getPriority, Comparator.nullsLast(Comparator.naturalOrder()))).orElse(special.get(0));
+        // 2) EMERGENCY or DAILY: special_date = today
+        List<OutletSchedule> specialDate = scheduleRepository.findSpecialDateByOutletAndDate(outletId, date);
+        if (!specialDate.isEmpty()) {
+            return selectByPriority(specialDate);
         }
-        // Optional: if date is in holiday_master, treat as closed (return null so caller shows CLOSED with holiday reason)
+        // 3) Holiday: treat as closed (no schedule)
         if (holidayRepository.findByHolidayDate(date).isPresent()) {
-            return null;  // Caller will use getHolidayReason(date) for reason in status response
+            return null;
         }
+        // 4) NORMAL: day_of_week = today's weekday
         String dayOfWeek = date.getDayOfWeek().name();
         List<OutletSchedule> normal = scheduleRepository.findNormalByOutletAndDayOfWeek(outletId, dayOfWeek);
         if (!normal.isEmpty()) {
-            return normal.stream().max(Comparator.comparing(OutletSchedule::getPriority, Comparator.nullsLast(Comparator.naturalOrder()))).orElse(normal.get(0));
+            return selectByPriority(normal);
         }
         return null;
+    }
+
+    private OutletSchedule selectByPriority(List<OutletSchedule> list) {
+        return list.stream()
+                .max(Comparator.comparing(OutletSchedule::getPriority, Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(list.get(0));
     }
 
     private String getHolidayReason(LocalDate date) {

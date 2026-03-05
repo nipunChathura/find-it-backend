@@ -6,7 +6,9 @@ import lk.icbt.findit.dto.PasswordChangeDTO;
 import lk.icbt.findit.entity.Role;
 import lk.icbt.findit.entity.User;
 import lk.icbt.findit.request.CustomerLoginRequest;
+import lk.icbt.findit.request.CustomerFavoriteRequest;
 import lk.icbt.findit.request.CustomerSearchHistoryRequest;
+import lk.icbt.findit.request.FeedbackRequest;
 import lk.icbt.findit.request.NearestOutletSearchRequest;
 import lk.icbt.findit.request.ProfileImageChangeRequest;
 import lk.icbt.findit.request.UserRequest;
@@ -14,13 +16,22 @@ import lk.icbt.findit.response.CustomerLoginResponse;
 import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.UserRepository;
+import lk.icbt.findit.response.CustomerFavoriteResponse;
 import lk.icbt.findit.response.CustomerSearchHistoryResponse;
+import lk.icbt.findit.response.FeedbackResponse;
+import lk.icbt.findit.response.ItemListItemResponse;
 import lk.icbt.findit.response.Response;
 import lk.icbt.findit.response.NearestOutletSearchResponse;
 import lk.icbt.findit.response.UserResponse;
+import lk.icbt.findit.service.CustomerFavoriteService;
 import lk.icbt.findit.service.CustomerSearchHistoryService;
+import lk.icbt.findit.service.FeedbackService;
+import lk.icbt.findit.service.ItemService;
 import lk.icbt.findit.service.NearestOutletSearchService;
+import lk.icbt.findit.service.NotificationService;
 import lk.icbt.findit.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
@@ -29,6 +40,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -39,10 +52,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerAppController {
 
+    private static final Logger log = LoggerFactory.getLogger(CustomerAppController.class);
+
     private final UserService userService;
     private final UserRepository userRepository;
     private final NearestOutletSearchService nearestOutletSearchService;
     private final CustomerSearchHistoryService customerSearchHistoryService;
+    private final CustomerFavoriteService customerFavoriteService;
+    private final FeedbackService feedbackService;
+    private final ItemService itemService;
+    private final NotificationService notificationService;
 
     /**
      * Customer login with email and password. Public. Returns JWT token and customer context.
@@ -73,24 +92,52 @@ public class CustomerAppController {
     /**
      * Search nearest outlets by item name. Uses customer location (lat/long), max distance (km),
      * and optional category and outlet type. Returns only outlets that are currently OPEN and
-     * have the matching item available; each outlet includes its matching items list.
+     * have the matching item available; each outlet includes its matching items list and
+     * is_favorite, customer_favorite_id and nickname when the outlet is in the customer's favorites.
      */
     @PostMapping(value = "/outlets/nearest", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<NearestOutletSearchResponse> searchNearestOutlets(@Valid @RequestBody NearestOutletSearchRequest request) {
-        NearestOutletSearchResponse response = nearestOutletSearchService.searchNearestOutlets(request);
+        User user = getAuthenticatedCustomer();
+        Long customerId = user.getCustomerId(); // may be null; then is_favorite will be false for all
+        NearestOutletSearchResponse response = nearestOutletSearchService.searchNearestOutlets(request, customerId);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Create a search history entry for the authenticated customer.
+     * Search items. Request query params (all optional): search (name/description), categoryId, outletId, status, availability.
+     * Example: GET /api/customer-app/items/search?search=Coffee&categoryId=1&outletId=5&availability=true
+     * Returns list of items matching the criteria. CUSTOMER only.
+     */
+    @GetMapping(value = "/items/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<ItemListItemResponse>> searchItems(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false, name = "outletId") Long outletId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean availability) {
+        getAuthenticatedCustomer();
+        List<ItemListItemResponse> list = itemService.search(search, categoryId, outletId, status, availability);
+        return ResponseEntity.ok(list);
+    }
+
+    /**
+     * Create a search history entry. Request may include customerId; for customer-app it must match the authenticated customer and is saved to the table.
      */
     @PostMapping(value = "/search-history", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerSearchHistoryResponse> createSearchHistory(@Valid @RequestBody CustomerSearchHistoryRequest request) {
         User user = getAuthenticatedCustomer();
         ensureCustomerId(user);
-        CustomerSearchHistoryResponse response = customerSearchHistoryService.create(user.getCustomerId(), request);
+        Long customerId = user.getCustomerId();
+        if (request.getCustomerId() != null && !request.getCustomerId().equals(customerId)) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "customerId must match the authenticated customer");
+        }
+        if (request.getCustomerId() != null) {
+            customerId = request.getCustomerId();
+        }
+        CustomerSearchHistoryResponse response = customerSearchHistoryService.create(customerId, request);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
     }
 
@@ -126,7 +173,9 @@ public class CustomerAppController {
             @Valid @RequestBody CustomerSearchHistoryRequest request) {
         User user = getAuthenticatedCustomer();
         ensureCustomerId(user);
-        return ResponseEntity.ok(customerSearchHistoryService.update(id, user.getCustomerId(), request));
+        CustomerSearchHistoryResponse response = customerSearchHistoryService.update(id, user.getCustomerId(), request);
+        notifyCustomerAction(user.getUserId(), "Search history updated", "Your search history was updated. Date & time: " + formatNotificationDateTime());
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -142,6 +191,99 @@ public class CustomerAppController {
         response.setStatus("SUCCESS");
         response.setResponseCode("00");
         response.setResponseMessage("Search history deleted.");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Save feedback for an outlet. Authenticated customer only. Body: outletId, feedbackText (optional), rating (optional).
+     */
+    @PostMapping(value = "/feedback", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<FeedbackResponse> saveFeedback(@Valid @RequestBody FeedbackRequest request) {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        FeedbackResponse response = feedbackService.create(user.getCustomerId(), request);
+        notifyCustomerAction(user.getUserId(), "Feedback submitted", "Your feedback was submitted successfully. Date & time: " + formatNotificationDateTime());
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * List feedbacks submitted by the authenticated customer (newest first).
+     */
+    @GetMapping(value = "/feedback", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<FeedbackResponse>> listMyFeedback() {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        return ResponseEntity.ok(feedbackService.listByCustomerId(user.getCustomerId()));
+    }
+
+    // ---------- Customer favorites (outlet + nickname) ----------
+
+    /**
+     * Add an outlet to favorites. Body: outletId (required), nickname (optional). Returns favorite with outlet details and nickname.
+     */
+    @PostMapping(value = "/favorites", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<CustomerFavoriteResponse> createFavorite(@Valid @RequestBody CustomerFavoriteRequest request) {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        CustomerFavoriteResponse response = customerFavoriteService.create(user.getCustomerId(), request);
+        notifyCustomerAction(user.getUserId(), "Favorite added", "An outlet was added to your favorites. Date & time: " + formatNotificationDateTime());
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Get favorites for the authenticated customer. Returns list with outlet details and nickname for each.
+     */
+    @GetMapping(value = "/favorites", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<CustomerFavoriteResponse>> listMyFavorites() {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        return ResponseEntity.ok(customerFavoriteService.listByCustomerId(user.getCustomerId()));
+    }
+
+    /**
+     * Get a single favorite by id (must belong to the authenticated customer).
+     */
+    @GetMapping(value = "/favorites/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<CustomerFavoriteResponse> getFavorite(@PathVariable Long id) {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        return ResponseEntity.ok(customerFavoriteService.getById(id, user.getCustomerId()));
+    }
+
+    /**
+     * Update a favorite (nickname and/or outlet). Must belong to the authenticated customer.
+     */
+    @PutMapping(value = "/favorites/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<CustomerFavoriteResponse> updateFavorite(
+            @PathVariable Long id,
+            @Valid @RequestBody CustomerFavoriteRequest request) {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        CustomerFavoriteResponse response = customerFavoriteService.update(id, user.getCustomerId(), request);
+        notifyCustomerAction(user.getUserId(), "Favorite updated", "Your favorite was updated. Date & time: " + formatNotificationDateTime());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Remove a favorite. Must belong to the authenticated customer.
+     */
+    @DeleteMapping(value = "/favorites/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Response> deleteFavorite(@PathVariable Long id) {
+        User user = getAuthenticatedCustomer();
+        ensureCustomerId(user);
+        customerFavoriteService.delete(id, user.getCustomerId());
+        notifyCustomerAction(user.getUserId(), "Favorite removed", "An outlet was removed from your favorites. Date & time: " + formatNotificationDateTime());
+        Response response = new Response();
+        response.setStatus("SUCCESS");
+        response.setResponseCode("00");
+        response.setResponseMessage("Favorite removed.");
         return ResponseEntity.ok(response);
     }
 
@@ -185,5 +327,18 @@ public class CustomerAppController {
             throw new InvalidRequestException(
                     ResponseCodes.CUSTOMER_NOT_FOUND_CODE, "Customer profile not linked. Search history is available only for customers.");
         }
+    }
+
+    /** Sends an in-app notification for a customer action. Logs and ignores errors so the main action is not failed. */
+    private void notifyCustomerAction(Long userId, String title, String body) {
+        try {
+            notificationService.saveNotification(userId, "CUSTOMER", title, body);
+        } catch (Exception e) {
+            log.warn("Failed to send customer action notification for user {}: {}", userId, e.getMessage());
+        }
+    }
+
+    private static String formatNotificationDateTime() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss"));
     }
 }

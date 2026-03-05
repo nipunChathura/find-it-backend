@@ -1,6 +1,7 @@
 package lk.icbt.findit.controller;
 
 import jakarta.validation.Valid;
+import lk.icbt.findit.common.Constants;
 import lk.icbt.findit.request.DiscountRequest;
 import lk.icbt.findit.response.DiscountListItemResponse;
 import lk.icbt.findit.response.DiscountResponse;
@@ -30,6 +31,15 @@ public class DiscountController {
     public ResponseEntity<DiscountResponse> create(@Valid @RequestBody DiscountRequest request) {
         DiscountResponse result = discountService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    /** Get discounts by outlet ID. Returns ACTIVE discounts that have at least one item from this outlet. CUSTOMER can call. */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
+    @GetMapping(value = "/outlet/{outletId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<DiscountListItemResponse>> getByOutletId(@PathVariable Long outletId) {
+        List<DiscountListItemResponse> list = discountService.list(Constants.DISCOUNT_ACTIVE_STATUS, null, outletId);
+        return ResponseEntity.ok(list);
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")

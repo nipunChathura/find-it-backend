@@ -72,6 +72,17 @@ public class DiscountServiceImpl implements DiscountService {
     public List<DiscountListItemResponse> list(String status, Long itemId, Long outletId) {
         String statusParam = (status != null && !status.isBlank()) ? status.trim() : null;
         List<Discount> list = discountRepository.findAllWithFilters(statusParam, itemId, outletId);
+        return toDiscountListItems(list);
+    }
+
+    @Override
+    public List<DiscountListItemResponse> listCurrentByOutletId(Long outletId) {
+        Date today = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        List<Discount> list = discountRepository.findActiveByOutletIdAndDateValid(outletId, today);
+        return toDiscountListItems(list);
+    }
+
+    private List<DiscountListItemResponse> toDiscountListItems(List<Discount> list) {
         if (list.isEmpty()) return Collections.emptyList();
         List<Long> discountIds = list.stream().map(Discount::getDiscountId).collect(Collectors.toList());
         List<DiscountItem> allItems = discountItemRepository.findByDiscount_DiscountIdInWithItem(discountIds);
