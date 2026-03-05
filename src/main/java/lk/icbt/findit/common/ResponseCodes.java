@@ -48,6 +48,7 @@ public class ResponseCodes {
     public static final String PAYMENT_NOT_FOUND_CODE = "6001";
     public static final String CUSTOMER_NOT_FOUND_CODE = "6101";
     public static final String CUSTOMER_EMAIL_ALREADY_EXISTS_CODE = "6102";
+    public static final String SEARCH_HISTORY_NOT_FOUND_CODE = "6201";
     public static final String NOTIFICATION_NOT_FOUND_CODE = "6301";
     public static final String FIREBASE_MESSAGING_ERROR_CODE = "6302";
     public static final String IMAGE_UPLOAD_INVALID_TYPE_CODE = "6401";

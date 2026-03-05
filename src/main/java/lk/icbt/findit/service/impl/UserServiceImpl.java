@@ -3,9 +3,11 @@ package lk.icbt.findit.service.impl;
 import lk.icbt.findit.common.Constants;
 import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.common.ResponseStatus;
+import lk.icbt.findit.entity.Customer;
 import lk.icbt.findit.entity.Role;
 import lk.icbt.findit.entity.User;
 import lk.icbt.findit.exception.InvalidRequestException;
+import lk.icbt.findit.repository.CustomerRepository;
 import lk.icbt.findit.dto.CustomerLoginDTO;
 import lk.icbt.findit.dto.ForgetPasswordDTO;
 import lk.icbt.findit.dto.ForgotPasswordApprovalDTO;
@@ -33,6 +35,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private static final String SERVICE_NAME = "UserService";
 
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -193,6 +198,36 @@ public class UserServiceImpl implements UserService {
         result.setRole(user.getRole());
         result.setCustomerId(user.getCustomerId());
         result.setProfileImageUrl(user.getProfileImageUrl());
+
+        if (user.getCustomerId() != null) {
+            customerRepository.findById(user.getCustomerId()).ifPresent(customer -> {
+                result.setFirstName(customer.getFirstName());
+                result.setLastName(customer.getLastName());
+                result.setPhoneNumber(customer.getPhoneNumber());
+                result.setNic(customer.getNic());
+                result.setDob(customer.getDob());
+                result.setGender(customer.getGender());
+                result.setCountryName(customer.getCountryName());
+                result.setMembershipType(customer.getMembershipType());
+                result.setCustomerStatus(customer.getStatus());
+                if (customer.getProfileImage() != null && !customer.getProfileImage().isBlank()) {
+                    result.setProfileImageUrl(customer.getProfileImage());
+                }
+            });
+        }
+
+        try {
+            String bodyWithTime = "You have successfully logged in to Find It. Date & time: " + formatNotificationDateTime();
+            notificationService.saveNotification(
+                    user.getUserId(),
+                    "CUSTOMER_LOGIN",
+                    "Login successful",
+                    bodyWithTime
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send login success notification for user {}: {}", user.getUserId(), e.getMessage());
+        }
+
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginCustomer", "userId", user.getUserId());
         return result;
     }
@@ -529,6 +564,17 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         user.setModifiedDatetime(new Date());
         userRepository.save(user);
+        try {
+            String bodyWithTime = "Your password has been changed successfully. Date & time: " + formatNotificationDateTime();
+            notificationService.saveNotification(
+                    user.getUserId(),
+                    "PASSWORD_CHANGED",
+                    "Password changed",
+                    bodyWithTime
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send password change notification for user {}: {}", user.getUserId(), e.getMessage());
+        }
         PasswordChangeDTO result = new PasswordChangeDTO();
         result.setStatus(ResponseStatus.SUCCESS.getStatus());
         result.setResponseCode(ResponseCodes.SUCCESS_CODE);
@@ -627,6 +673,25 @@ public class UserServiceImpl implements UserService {
         user.setProfileImageUrl(profileImageUrl);
         user.setModifiedDatetime(new Date());
         userRepository.save(user);
+        if (user.getCustomerId() != null) {
+            customerRepository.findById(user.getCustomerId()).ifPresent(customer -> {
+                customer.setProfileImage(profileImageUrl);
+                customerRepository.save(customer);
+            });
+        }
+        if (user.getRole() == Role.CUSTOMER) {
+            try {
+                String bodyWithTime = "Your profile image has been updated successfully. Date & time: " + formatNotificationDateTime();
+                notificationService.saveNotification(
+                        user.getUserId(),
+                        "PROFILE_IMAGE_UPDATE",
+                        "Profile image updated",
+                        bodyWithTime
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send profile image change notification for user {}: {}", user.getUserId(), e.getMessage());
+            }
+        }
         UserResponse response = new UserResponse();
         response.setStatus(ResponseStatus.SUCCESS.getStatus());
         response.setResponseCode(ResponseCodes.SUCCESS_CODE);
@@ -635,5 +700,10 @@ public class UserServiceImpl implements UserService {
         response.setProfileImageUrl(user.getProfileImageUrl());
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "changeProfileImage", "userId", user.getUserId());
         return response;
+    }
+
+    /** Formats current date-time for inclusion in customer action notification body (e.g. 05-Mar-2025 14:30:45). */
+    private static String formatNotificationDateTime() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss"));
     }
 }

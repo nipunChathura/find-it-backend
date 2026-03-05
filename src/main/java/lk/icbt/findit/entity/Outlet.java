@@ -74,4 +74,7 @@ public class Outlet extends AbstractEntity{
     @Column(name = "onboarding_remarks")
     private String onboardingRemarks;
 
+    @Column(name = "rating")
+    private Double rating;
+
 }

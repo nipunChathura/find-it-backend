@@ -36,4 +36,5 @@ public class OutletResponse extends Response {
     private String remarks;
     private String outletStatus;
     private java.util.Date subscriptionValidUntil;
+    private Double rating;
 }

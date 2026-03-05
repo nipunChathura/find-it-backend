@@ -25,8 +25,8 @@ public class CustomerOnboardingRequest {
     @Size(max = 255)
     private String email;
 
-    @Pattern(regexp = "^(?:\\+94|0)?7\\d{8}$", message = "Invalid phone number")
-    @Size(max = 20)
+    /** Phone number; any country format allowed (e.g. +94 77 123 4567, +1 555 123 4567). */
+    @Size(max = 30)
     private String phoneNumber;
 
     @Size(max = 20)

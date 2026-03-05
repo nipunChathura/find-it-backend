@@ -59,4 +59,7 @@ public class OutletUpdateRequest {
 
     @Size(max = 500)
     private String remarks;
+
+    /** Optional outlet rating (e.g. 0.0 to 5.0). */
+    private Double rating;
 }

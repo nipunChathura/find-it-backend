@@ -39,4 +39,5 @@ public class OutletListItemResponse {
     private String remarks;
     private String status;
     private java.util.Date subscriptionValidUntil;
+    private Double rating;
 }

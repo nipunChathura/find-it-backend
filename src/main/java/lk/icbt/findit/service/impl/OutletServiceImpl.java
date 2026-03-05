@@ -62,6 +62,7 @@ public class OutletServiceImpl implements OutletService {
                     .name(o.getOutletName())
                     .status(o.getStatus())
                     .currentStatus(currentStatus)
+                    .rating(o.getRating())
                     .build();
         }).collect(Collectors.toList());
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "listOutlets", "count", result.size());
@@ -308,6 +309,7 @@ public class OutletServiceImpl implements OutletService {
         r.setRemarks(o.getRemarks());
         r.setStatus(o.getStatus());
         r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setRating(o.getRating());
         return r;
     }
 
@@ -334,6 +336,7 @@ public class OutletServiceImpl implements OutletService {
         outlet.setAccountNumber(trim(dto.getAccountNumber()));
         outlet.setAccountHolderName(trim(dto.getAccountHolderName()));
         outlet.setRemarks(trim(dto.getRemarks()));
+        outlet.setRating(dto.getRating());
         if (dto.getProvinceId() != null) {
             provinceRepository.findById(dto.getProvinceId()).ifPresent(outlet::setProvince);
         } else {
@@ -380,6 +383,7 @@ public class OutletServiceImpl implements OutletService {
         outlet.setAccountHolderName(trim(dto.getAccountHolderName()));
         outlet.setRemarks(trim(dto.getRemarks()));
         outlet.setStatus(status);
+        outlet.setRating(dto.getRating());
 
         if (dto.getProvinceId() != null) {
             provinceRepository.findById(dto.getProvinceId()).ifPresent(outlet::setProvince);
@@ -427,6 +431,7 @@ public class OutletServiceImpl implements OutletService {
         dto.setRemarks(outlet.getRemarks());
         dto.setOutletStatus(outlet.getStatus());
         dto.setSubscriptionValidUntil(outlet.getSubscriptionValidUntil());
+        dto.setRating(outlet.getRating());
         return dto;
     }
 }

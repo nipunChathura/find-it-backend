@@ -38,4 +38,5 @@ public class OutletAddDTO extends Response {
     private Long outletId;
     private String outletStatus;
     private java.util.Date subscriptionValidUntil;
+    private Double rating;
 }

@@ -34,7 +34,7 @@ public class CustomerRequest {
     @Size(max = 255)
     private String email;
 
-    @Size(max = 20)
+    @Size(max = 30)
     private String phoneNumber;
 
     @NotNull(message = "Membership type is required")

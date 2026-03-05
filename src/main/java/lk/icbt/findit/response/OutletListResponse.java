@@ -18,4 +18,5 @@ public class OutletListResponse {
     private String name;
     private String status;         // ACTIVE, INACTIVE, PENDING, etc.
     private String currentStatus;  // OPEN or CLOSED from schedule
+    private Double rating;
 }

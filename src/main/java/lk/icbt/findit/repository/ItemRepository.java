@@ -1,6 +1,7 @@
 package lk.icbt.findit.repository;
 
 import lk.icbt.findit.entity.Item;
+import lk.icbt.findit.entity.OutletType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,18 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("outletId") Long outletId,
             @Param("status") String status,
             @Param("availability") Boolean availability);
+
+    /** For nearest-outlet search: items matching name, available, active; outlet active with lat/long; optional category and outlet type. */
+    @Query("SELECT DISTINCT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o " +
+            "WHERE LOWER(i.itemName) LIKE LOWER(CONCAT('%', :itemName, '%')) " +
+            "AND i.availability = true AND i.status = 'ACTIVE' " +
+            "AND o.status = 'ACTIVE' AND o.latitude IS NOT NULL AND o.longitude IS NOT NULL " +
+            "AND (:categoryId IS NULL OR c.categoryId = :categoryId) " +
+            "AND (:outletType IS NULL OR o.outletType = :outletType)")
+    List<Item> findForNearestOutletSearch(
+            @Param("itemName") String itemName,
+            @Param("categoryId") Long categoryId,
+            @Param("outletType") OutletType outletType);
 
     long countByStatusNot(String itemDeletedStatus);
 }
