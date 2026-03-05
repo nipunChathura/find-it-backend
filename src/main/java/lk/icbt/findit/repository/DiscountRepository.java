@@ -13,6 +13,8 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
 
     List<Discount> findByStatus(String status);
 
+    long countByStatus(String status);
+
     @Query("SELECT d FROM Discount d WHERE (:status IS NULL OR :status = '' OR d.status = :status) " +
             "AND (:itemId IS NULL OR d.discountId IN (SELECT di.discount.discountId FROM DiscountItem di WHERE di.item.itemId = :itemId)) " +
             "AND (:outletId IS NULL OR d.discountId IN (SELECT di2.discount.discountId FROM DiscountItem di2 WHERE di2.item.outlet.outletId = :outletId)) " +

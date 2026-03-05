@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/auth/password/change").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/password/forgot").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("SYSADMIN", "ADMIN")
+                        .requestMatchers("/api/dashboard/**").hasAnyRole("SYSADMIN", "ADMIN")
                         .requestMatchers("/api/customers/**").hasAnyRole("SYSADMIN", "ADMIN")
                         .requestMatchers("/api/categories/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT")
                         .requestMatchers("/api/provinces/**").hasAnyRole("SYSADMIN", "ADMIN", "MERCHANT", "SUBMERCHANT")

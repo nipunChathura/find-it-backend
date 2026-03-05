@@ -7,10 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, Long> {
+
+    long countByCreatedDatetimeBetween(Date start, Date end);
 
     boolean existsByMerchantEmail(String merchantEmail);
 
@@ -27,4 +30,8 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
             @Param("search") String search,
             @Param("status") String status,
             @Param("merchantType") MerchantType merchantType);
+
+    long countByStatus(String status);
+
+    long countByStatusNot(String merchantDeletedStatus);
 }

@@ -20,4 +20,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllWithFilters(@Param("name") String name,
                                       @Param("categoryType") CategoryType categoryType,
                                       @Param("status") String status);
+
+    long countByStatusNot(String deleted);
 }

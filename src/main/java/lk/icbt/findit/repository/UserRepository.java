@@ -5,11 +5,15 @@ import lk.icbt.findit.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    long countByCreatedDatetimeBetween(Date start, Date end);
 
     Optional<User> findByUsername(String username);
 
@@ -35,4 +39,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     long count();
+
+    long countByStatus(String status);
+
+    long countByStatusNot(String status);
+
+    long countByStatusNotInAndRoleIn(Collection<String> status, Collection<Role> role);
+
+    /** Count users by role, excluding given status (e.g. DELETED). */
+    long countByRoleAndStatusNot(Role role, String status);
 }

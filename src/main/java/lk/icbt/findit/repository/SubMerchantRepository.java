@@ -29,4 +29,8 @@ public interface SubMerchantRepository extends JpaRepository<SubMerchant, Long> 
             @Param("search") String search,
             @Param("status") String status,
             @Param("merchantType") MerchantType merchantType);
+
+    long countByStatus(String status);
+
+    long countByStatusNot(String merchantDeletedStatus);
 }

@@ -13,6 +13,10 @@ import java.util.List;
 @Repository
 public interface OutletRepository extends JpaRepository<Outlet, Long> {
 
+    /** Outlet counts by business category for dashboard pie (excludes no status filter). */
+    @Query("SELECT o.businessCategory, COUNT(o) FROM Outlet o GROUP BY o.businessCategory ORDER BY COUNT(o) DESC")
+    List<Object[]> countOutletsByBusinessCategory();
+
     /** Find outlets that should be expired (subscription valid until passed). */
     @Query("SELECT o FROM Outlet o WHERE o.status IN :statuses AND o.subscriptionValidUntil < :before")
     List<Outlet> findByStatusInAndSubscriptionValidUntilBefore(
@@ -42,4 +46,10 @@ public interface OutletRepository extends JpaRepository<Outlet, Long> {
     /** Outlets assigned to a sub-merchant. */
     @Query("SELECT o FROM Outlet o LEFT JOIN FETCH o.merchant LEFT JOIN FETCH o.subMerchant LEFT JOIN FETCH o.province LEFT JOIN FETCH o.district LEFT JOIN FETCH o.city WHERE o.subMerchant.subMerchantId = :subMerchantId")
     List<Outlet> findBySubMerchant_SubMerchantId(@Param("subMerchantId") Long subMerchantId);
+
+    long countByStatus(String status);
+
+    long countByCreatedDatetimeBetween(Date start, Date end);
+
+    long countByStatusNot(String userDeletedStatus);
 }

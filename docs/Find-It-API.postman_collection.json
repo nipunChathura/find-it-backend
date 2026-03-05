@@ -2,7 +2,7 @@
   "info": {
     "name": "Find It API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Get by outlet (GET /api/items/outlet/{outletId}), Search (GET with query params), Update (PUT), Delete (DELETE). **Images:** POST /api/images/upload — multipart file + type (profile, items, receipt); saves under project images/{type}/ with unique filename; response: fileName, type, relativePath. GET /api/images/show?type=&fileName= — returns image file by type and fileName.\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns outletId, outletName, itemIds and items. Optional filters: status, itemId, outletId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. Optional: paymentDate, paidMonth, receiptImage, status (PENDING | ACTIVE | APPROVED). **Create payment:** If status is ACTIVE or APPROVED — outlet subscriptionValidUntil extended by 1 month; if PENDING — no date change. Outlet status then set by subscription: subscriptionValidUntil ≥ today → ACTIVE; subscriptionValidUntil < paid date → PENDING_SUBSCRIPTION; else → EXPIRED_SUBSCRIPTION. List filter: outletId, status. **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; GET /api/notifications/user/{userId} — all notifications for user; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
+    "description": "API collection for Find It backend.\n\n**Variables:**\n- `baseUrl`: http://localhost:9090/find-it (context path + port)\n- `token`: JWT for protected endpoints. Run **Users > Login**, **Merchants > Merchant login**, or **Customers > Customer login (email + password)**; the **Tests** script saves `response.token` to the collection variable `token` and to the environment variable `token` (if an environment is selected). Use {{token}} in Authorization headers (Bearer {{token}}).\n\n**Auth (unified password):** Change password: PUT /api/auth/password/change (any authenticated user). Forgot password: PUT /api/auth/password/forgot (public); admin approves via Users > Forgot password approval (SYSADMIN).\n\n**Dashboard:** GET /api/dashboard/summary — KPI counts (users, usersAdmin, usersSysadmin, usersUser, merchants, items, customers, outlets, categories, pendingApprovals, activeDiscounts). GET /api/dashboard/merchant-summary — totalMerchants, totalOutlets, outletDistribution (pie: label, value). GET /api/dashboard/activity?months=6 — activity per month (users, merchants, outlets, customers, payments). GET /api/dashboard/monthly-income?months=12 — income per month for chart. **Users:** Change profile image: PUT /api/users/{userId}/profile-image — body: { fileName }. **Get all users** excludes MERCHANT and SUBMERCHANT; optional filters: status, search (username/email).\n**Get all merchants** supports search (name, email, username) and filters (status, merchantType). **Get my merchant/sub-merchant with outlets:** GET /api/merchants/with-outlets — MERCHANT and SUBMERCHANT only; returns logged-in user's merchant or sub-merchant with all assigned outlets. Add merchant / add sub-merchant responses include outlets (empty for new).\n**Get all outlets** supports search (merchant name, sub-merchant name, outlet name) and filters (status, outletType).\n\n**Outlet opening hours:** List outlets (GET /api/outlets) with currentStatus OPEN/CLOSED; Get schedules (GET /api/outlets/{id}/schedules); Check status (GET /api/outlets/{id}/status) returns is_closed, openTime, closeTime; Create/Update schedule (POST/PUT); Delete schedule (DELETE) soft-deletes (status DELETED).\n\n**Items:** CRUD and search at /api/items. Create (POST), Get by ID (GET /api/items/{id}), Get by outlet (GET /api/items/outlet/{outletId}), Search (GET with query params), Update (PUT), Delete (DELETE). **Images:** POST /api/images/upload — multipart file + type (profile, items, receipt); saves under project images/{type}/ with unique filename; response: fileName, type, relativePath. GET /api/images/show?type=&fileName= — returns image file by type and fileName.\n\n**Discounts:** CRUD at /api/discounts. Create/Update with itemIds; List returns outletId, outletName, itemIds and items. Optional filters: status, itemId, outletId.\n\n**Payments:** CRUD at /api/payments. Required: outletId, paymentType, amount. Optional: paymentDate, paidMonth, receiptImage, status (PENDING | ACTIVE | APPROVED). **Create payment:** If status is ACTIVE or APPROVED — outlet subscriptionValidUntil extended by 1 month; if PENDING — no date change. Outlet status then set by subscription: subscriptionValidUntil ≥ today → ACTIVE; subscriptionValidUntil < paid date → PENDING_SUBSCRIPTION; else → EXPIRED_SUBSCRIPTION. List filter: outletId, status. **Admin:** PUT /api/admin/payments/{id}/approve — sets payment to APPROVED and, if outlet is PENDING_SUBSCRIPTION, activates outlet and extends subscription.\n\n**Customers:** **Login** (public): POST /api/customers/login — email and password; returns token, userId, email, customerId. **Onboarding** (public): POST /api/customers/onboarding — customer details + optional countryName + username + password; creates Customer and User (role CUSTOMER); then log in via POST /api/customers/login with email and password. **CRUD** (SYSADMIN/ADMIN only): create, get, list, update, delete; response includes countryName. List filter: search, status, membershipType.\n\n**Notifications:** POST /api/notifications/send — save notification and optionally send FCM push (include token); GET /api/notifications/unread/{userId}; GET /api/notifications/user/{userId} — all notifications for user; POST /api/notifications/read/{id}; GET /api/notifications/type/{userId}?type=ADMIN. All require auth (any role)."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:9090/find-it" },
@@ -90,12 +90,61 @@
             "body": { "mode": "raw", "raw": "{\n  \"newPassword\": \"new_password_after_approval\"\n}" },
             "url": "{{baseUrl}}/api/users/password/forgot/approval/1"
           }
+        },
+        {
+          "name": "Change profile image",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"fileName\": \"unique-filename-from-upload.jpg\"\n}" },
+            "url": "{{baseUrl}}/api/users/1/profile-image",
+            "description": "Updates user profile image. Path: userId. Body: fileName (from Images > Upload image, type profile). Response: profileImageUrl (e.g. profile/filename.jpg)."
+          }
         }
       ]
     },
     {
       "name": "Admin",
       "item": [
+        {
+          "name": "Dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/dashboard/summary",
+            "description": "SYSADMIN or ADMIN. Returns KPI counts: users (total), usersAdmin, usersSysadmin, usersUser (by role, excluding DELETED), merchants, items, customers, outlets, categories, pendingApprovals, activeDiscounts."
+          }
+        },
+        {
+          "name": "Dashboard activity",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/dashboard/activity?months=6",
+            "description": "SYSADMIN or ADMIN. Returns activity for the last N months: months, activity (array of { month, users, merchants, outlets, customers, payments } per month). Query: months (optional, default 6, max 24)."
+          }
+        },
+        {
+          "name": "Dashboard monthly income",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/dashboard/monthly-income?months=12",
+            "description": "SYSADMIN or ADMIN. Returns monthly income for chart: months, incomeData (array of { month, income } per month). Query: months (optional, default 12, max 24)."
+          }
+        },
+        {
+          "name": "Merchant summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/dashboard/merchant-summary",
+            "description": "SYSADMIN or ADMIN. Returns data.totalMerchants, data.totalOutlets, data.outletDistribution (array of { label, value } for pie chart by business category). Also at root: totalMerchants, totalOutlets, outletDistribution. Excludes DELETED merchants."
+          }
+        },
         {
           "name": "Add user (SYSADMIN)",
           "request": {

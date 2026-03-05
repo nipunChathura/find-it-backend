@@ -27,4 +27,6 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("outletId") Long outletId,
             @Param("status") String status,
             @Param("availability") Boolean availability);
+
+    long countByStatusNot(String itemDeletedStatus);
 }
