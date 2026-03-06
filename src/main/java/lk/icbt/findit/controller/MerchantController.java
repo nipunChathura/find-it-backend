@@ -134,6 +134,31 @@ public class MerchantController {
         return ResponseEntity.ok(mapToSubMerchantResponse(result));
     }
 
+    @PreAuthorize("hasRole('MERCHANT')")
+    @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<MerchantResponse> changePassword(@Valid @RequestBody UserRequest request) {
+        String username = getAuthenticatedUsername();
+        PasswordChangeDTO result = userService.changePasswordForMerchant(
+                username, request.getCurrentPassword(), request.getNewPassword());
+        MerchantResponse response = new MerchantResponse();
+        response.setStatus(result.getStatus());
+        response.setResponseCode(result.getResponseCode());
+        response.setResponseMessage(result.getResponseMessage());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping(value = "/password/forgot", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<MerchantResponse> forgotPassword(@Valid @RequestBody UserRequest request) {
+        ForgetPasswordDTO result = userService.forgotPasswordForMerchant(request.getUsername());
+        MerchantResponse response = new MerchantResponse();
+        response.setStatus(result.getStatus());
+        response.setResponseCode(result.getResponseCode());
+        response.setResponseMessage(result.getResponseMessage());
+        return ResponseEntity.ok(response);
+    }
+
     private String getAuthenticatedUsername() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null ? auth.getName() : null;

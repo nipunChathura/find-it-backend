@@ -3,6 +3,7 @@ package lk.icbt.findit.controller;
 import jakarta.validation.Valid;
 import lk.icbt.findit.dto.ForgotPasswordApprovalDTO;
 import lk.icbt.findit.dto.LoginDTO;
+import lk.icbt.findit.dto.PasswordChangeDTO;
 import lk.icbt.findit.dto.UserRegistrationDTO;
 import lk.icbt.findit.request.ProfileImageChangeRequest;
 import lk.icbt.findit.request.UserRequest;
@@ -48,6 +49,36 @@ public class UserController {
         UserResponse response = new UserResponse();
         mapResultToResponse(result, response);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<UserResponse> changePassword(@Valid @RequestBody UserRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+
+        PasswordChangeDTO dto = new PasswordChangeDTO();
+        BeanUtils.copyProperties(request, dto);
+        dto.setUsername(username);
+
+        PasswordChangeDTO result = userService.changePassword(dto);
+
+        UserResponse response = new UserResponse();
+        mapResultToResponse(result, response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping(value = "/password/forgot", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<UserResponse> forgetPassword(@Valid @RequestBody UserRequest request) {
+        ForgetPasswordDTO dto = new ForgetPasswordDTO();
+        BeanUtils.copyProperties(request, dto);
+
+        ForgetPasswordDTO result = userService.forgetPassword(dto);
+
+        UserResponse response = new UserResponse();
+        mapResultToResponse(result, response);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping(value = "/password/forgot/approval/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

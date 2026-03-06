@@ -41,7 +41,15 @@ public interface UserService {
 
     PasswordChangeDTO changePassword(PasswordChangeDTO dto);
 
+    PasswordChangeDTO changePasswordForMerchant(String username, String currentPassword, String newPassword);
+
+    PasswordChangeDTO changePasswordForSubMerchant(String username, String currentPassword, String newPassword);
+
     ForgetPasswordDTO forgetPassword(ForgetPasswordDTO dto);
+
+    ForgetPasswordDTO forgotPasswordForMerchant(String username);
+
+    ForgetPasswordDTO forgotPasswordForSubMerchant(String username);
 
     ForgotPasswordApprovalDTO approveForgotPassword(ForgotPasswordApprovalDTO dto);
 

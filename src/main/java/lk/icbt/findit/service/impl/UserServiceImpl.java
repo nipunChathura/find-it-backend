@@ -450,6 +450,35 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public MerchantLoginDTO loginMerchant(LoginDTO dto) {
+        LoginDTO loginResult = login(dto);
+        if (loginResult.getRole() != Role.MERCHANT) {
+            throw new InvalidRequestException(
+                    ResponseCodes.NOT_MERCHANT_OR_SUB_MERCHANT_CODE,
+                    "Only merchant and sub-merchant users can use this login"
+            );
+        }
+        User user = userRepository.findByUsername(loginResult.getUsername())
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        MerchantLoginDTO result = new MerchantLoginDTO();
+        result.setStatus(loginResult.getStatus());
+        result.setResponseCode(loginResult.getResponseCode());
+        result.setResponseMessage(loginResult.getResponseMessage());
+        result.setToken(loginResult.getToken());
+        result.setUserId(loginResult.getUserId());
+        result.setUsername(loginResult.getUsername());
+        result.setUserStatus(loginResult.getUserStatus());
+        result.setRole(loginResult.getRole());
+        result.setMerchantId(user.getMerchantId());
+        result.setSubMerchantId(user.getSubMerchantId());
+        return result;
+    }
+
+    @Override
+    @Transactional
     public UserRegistrationDTO register(UserRegistrationDTO dto) {
         ServiceLoggingHelper.logStart(log, SERVICE_NAME, "register", "username", dto.getUsername());
         if (userRepository.existsByUsername(dto.getUsername())) {
@@ -585,6 +614,54 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public PasswordChangeDTO changePasswordForMerchant(String username, String currentPassword, String newPassword) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        if (user.getMerchantId() == null || user.getSubMerchantId() != null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.NOT_A_MERCHANT_USER_CODE,
+                    "Not a merchant user. Use merchant password APIs only for main merchant accounts."
+            );
+        }
+        PasswordChangeDTO dto = new PasswordChangeDTO();
+        dto.setUsername(username);
+        dto.setCurrentPassword(currentPassword);
+        dto.setNewPassword(newPassword);
+        return changePassword(dto);
+    }
+
+    @Override
+    @Transactional
+    public PasswordChangeDTO changePasswordForSubMerchant(String username, String currentPassword, String newPassword) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        if (user.getSubMerchantId() == null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.NOT_A_SUB_MERCHANT_USER_CODE,
+                    "Not a sub-merchant user. Use sub-merchant password APIs only for sub-merchant accounts."
+            );
+        }
+        PasswordChangeDTO dto = new PasswordChangeDTO();
+        dto.setUsername(username);
+        dto.setCurrentPassword(currentPassword);
+        dto.setNewPassword(newPassword);
+        return changePassword(dto);
+    }
+
+    @Override
+    @Transactional
     public ForgetPasswordDTO forgetPassword(ForgetPasswordDTO dto) {
         ServiceLoggingHelper.logStart(log, SERVICE_NAME, "forgetPassword", "username", dto.getUsername());
         ServiceLoggingHelper.logGettingData(log, "User by username", "username", dto.getUsername());
@@ -612,6 +689,50 @@ public class UserServiceImpl implements UserService {
         result.setResponseMessage("Forgot password request submitted. Wait for admin approval.");
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "forgetPassword", "username", dto.getUsername());
         return result;
+    }
+
+    @Override
+    @Transactional
+    public ForgetPasswordDTO forgotPasswordForMerchant(String username) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Username is required");
+        }
+        User user = userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        if (user.getRole() != Role.MERCHANT || user.getMerchantId() == null || user.getSubMerchantId() != null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.NOT_A_MERCHANT_USER_CODE,
+                    "Only main merchant users can use this endpoint."
+            );
+        }
+        ForgetPasswordDTO dto = new ForgetPasswordDTO();
+        dto.setUsername(user.getUsername());
+        return forgetPassword(dto);
+    }
+
+    @Override
+    @Transactional
+    public ForgetPasswordDTO forgotPasswordForSubMerchant(String username) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.MISSING_PARAMETER_CODE, "Username is required");
+        }
+        User user = userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new InvalidRequestException(
+                        ResponseCodes.USER_NOT_FOUND_CODE,
+                        "User not found"
+                ));
+        if (user.getSubMerchantId() == null) {
+            throw new InvalidRequestException(
+                    ResponseCodes.NOT_A_SUB_MERCHANT_USER_CODE,
+                    "Only sub-merchant users can use this endpoint."
+            );
+        }
+        ForgetPasswordDTO dto = new ForgetPasswordDTO();
+        dto.setUsername(user.getUsername());
+        return forgetPassword(dto);
     }
 
     @Override
