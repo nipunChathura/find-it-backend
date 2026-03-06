@@ -11,6 +11,9 @@ find-it-8283f-firebase-adminsdk-fbsvc-44f6d583fc.json
 ### Uploaded images (do not commit) ###
 /images/
 
+### Docs (project documentation) ###
+/docs/
+
 ### STS ###
 .apt_generated
 .classpath
