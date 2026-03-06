@@ -23,7 +23,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        boolean enabled = Constants.USER_APPROVED_STATUS.equals(user.getStatus());
+        boolean enabled = !Constants.USER_DELETED_STATUS.equals(user.getStatus())
+                && (Constants.USER_APPROVED_STATUS.equals(user.getStatus())
+                || Constants.USER_ACTIVE_STATUS.equals(user.getStatus()));
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),

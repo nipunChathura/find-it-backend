@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 public class SubMerchantResponse extends Response {
     private Long subMerchantId;
     private Long merchantId;
+    private String parentMerchantName;
     private String merchantName;
     private String merchantEmail;
     private String merchantNic;

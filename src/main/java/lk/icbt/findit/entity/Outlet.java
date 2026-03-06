@@ -65,11 +65,16 @@ public class Outlet extends AbstractEntity{
     private String accountHolderName;
     @Column(name = "status")
     private String status;
+    @Column(name = "subscription_valid_until")
+    private java.util.Date subscriptionValidUntil;
     @Column(name = "remarks")
     private String remarks;
     @Column(name = "onboarding_status")
     private String onboardingStatus;
     @Column(name = "onboarding_remarks")
     private String onboardingRemarks;
+
+    @Column(name = "rating")
+    private Double rating;
 
 }

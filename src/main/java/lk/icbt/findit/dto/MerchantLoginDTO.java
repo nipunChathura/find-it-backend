@@ -17,4 +17,5 @@ public class MerchantLoginDTO extends Response {
     private Role role;
     private Long merchantId;
     private Long subMerchantId;
+    private String profileImageUrl;
 }
