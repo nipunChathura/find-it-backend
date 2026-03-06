@@ -52,4 +52,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("outletType") OutletType outletType);
 
     long countByStatusNot(String itemDeletedStatus);
+
+    /** Count items belonging to outlets in the given list (for merchant app dashboard). */
+    long countByOutlet_OutletIdIn(List<Long> outletIds);
 }
