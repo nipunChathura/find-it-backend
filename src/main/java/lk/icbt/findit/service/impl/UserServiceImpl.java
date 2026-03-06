@@ -450,35 +450,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public MerchantLoginDTO loginMerchant(LoginDTO dto) {
-        LoginDTO loginResult = login(dto);
-        if (loginResult.getRole() != Role.MERCHANT) {
-            throw new InvalidRequestException(
-                    ResponseCodes.NOT_MERCHANT_OR_SUB_MERCHANT_CODE,
-                    "Only merchant and sub-merchant users can use this login"
-            );
-        }
-        User user = userRepository.findByUsername(loginResult.getUsername())
-                .orElseThrow(() -> new InvalidRequestException(
-                        ResponseCodes.USER_NOT_FOUND_CODE,
-                        "User not found"
-                ));
-        MerchantLoginDTO result = new MerchantLoginDTO();
-        result.setStatus(loginResult.getStatus());
-        result.setResponseCode(loginResult.getResponseCode());
-        result.setResponseMessage(loginResult.getResponseMessage());
-        result.setToken(loginResult.getToken());
-        result.setUserId(loginResult.getUserId());
-        result.setUsername(loginResult.getUsername());
-        result.setUserStatus(loginResult.getUserStatus());
-        result.setRole(loginResult.getRole());
-        result.setMerchantId(user.getMerchantId());
-        result.setSubMerchantId(user.getSubMerchantId());
-        return result;
-    }
-
-    @Override
-    @Transactional
     public UserRegistrationDTO register(UserRegistrationDTO dto) {
         ServiceLoggingHelper.logStart(log, SERVICE_NAME, "register", "username", dto.getUsername());
         if (userRepository.existsByUsername(dto.getUsername())) {

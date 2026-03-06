@@ -51,35 +51,6 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<UserResponse> changePassword(@Valid @RequestBody UserRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth != null ? auth.getName() : null;
-
-        PasswordChangeDTO dto = new PasswordChangeDTO();
-        BeanUtils.copyProperties(request, dto);
-        dto.setUsername(username);
-
-        PasswordChangeDTO result = userService.changePassword(dto);
-
-        UserResponse response = new UserResponse();
-        mapResultToResponse(result, response);
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping(value = "/password/forgot", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<UserResponse> forgetPassword(@Valid @RequestBody UserRequest request) {
-        ForgetPasswordDTO dto = new ForgetPasswordDTO();
-        BeanUtils.copyProperties(request, dto);
-
-        ForgetPasswordDTO result = userService.forgetPassword(dto);
-
-        UserResponse response = new UserResponse();
-        mapResultToResponse(result, response);
-        return ResponseEntity.ok(response);
-    }
 
     @PutMapping(value = "/password/forgot/approval/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
