@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-01-01T00:00:00.000Z" agent="FindIt" version="22.1.0" etag="class-diagram-v2" type="device">
+  <diagram name="Class Diagram" id="class-diagram-page">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- TITLE -->
+        <mxCell id="title" value="Find It – Class Diagram (Entities)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="500" y="12" width="320" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== COLUMN 1: LOCATION (left) ========== -->
+        <mxCell id="lbl-loc" value="Location" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="50" y="48" width="60" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-province" value="Province&#xa;─────────────────&#xa;- provinceId: Long&#xa;- name: String&#xa;- code: Long" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="40" y="72" width="140" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-district" value="District&#xa;─────────────────&#xa;- districtId: Long&#xa;- name: String&#xa;- province: Province" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="40" y="168" width="140" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-city" value="City&#xa;─────────────────&#xa;- cityId: Long&#xa;- name: String&#xa;- district: District" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="40" y="264" width="140" height="68" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== COLUMN 2: MERCHANT + OUTLET + PAYMENT/SCHEDULE ========== -->
+        <mxCell id="lbl-merch" value="Merchant / Outlet" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="218" y="48" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-merchant" value="Merchant&#xa;─────────────────&#xa;- merchantId: Long&#xa;- merchantName: String&#xa;- merchantEmail: String&#xa;- merchantType: Enum&#xa;- status: String&#xa;- subMerchants: List&lt;SubMerchant&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="72" width="180" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-submerchant" value="SubMerchant&#xa;─────────────────&#xa;- subMerchantId: Long&#xa;- merchant: Merchant&#xa;- merchantName: String&#xa;- merchantEmail: String&#xa;- status: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="192" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-outlet" value="Outlet&#xa;─────────────────&#xa;- outletId: Long&#xa;- outletName: String&#xa;- merchant: Merchant&#xa;- subMerchant: SubMerchant&#xa;- province, district, city&#xa;- addressLine1, lat, long&#xa;- status: String&#xa;- rating: Double" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="308" width="180" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-payment" value="Payment&#xa;─────────────────&#xa;- paymentId: Long&#xa;- amount: BigDecimal&#xa;- outlet: Outlet&#xa;- status: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F4FC;strokeColor=#6C8EBF;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="452" width="160" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-schedule" value="OutletSchedule&#xa;─────────────────&#xa;- id: Long&#xa;- outlet: Outlet&#xa;- scheduleType, dayOfWeek&#xa;- openTime, closeTime&#xa;- isActive: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F4FC;strokeColor=#6C8EBF;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="556" width="180" height="88" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== COLUMN 3: CUSTOMER + FAVORITE + FEEDBACK ========== -->
+        <mxCell id="lbl-cust" value="Customer" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="418" y="48" width="80" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-customer" value="Customer&#xa;─────────────────&#xa;- customerId: Long&#xa;- firstName, lastName&#xa;- email, phoneNumber&#xa;- membershipType: Enum&#xa;- status: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9E6;strokeColor=#E6B84C;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="400" y="72" width="160" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-favorite" value="CustomerFavorite&#xa;─────────────────&#xa;- id: Long&#xa;- customer: Customer&#xa;- outlet: Outlet&#xa;- nickname: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F4FC;strokeColor=#6C8EBF;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="400" y="188" width="160" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-feedback" value="Feedback&#xa;─────────────────&#xa;- feedbackId: Long&#xa;- feedbackText: String&#xa;- rating: Double&#xa;- customer: Customer&#xa;- outlet: Outlet" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F4FC;strokeColor=#6C8EBF;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="400" y="292" width="160" height="88" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== COLUMN 4: CATEGORY + ITEM ========== -->
+        <mxCell id="lbl-cat" value="Catalog" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="598" y="48" width="60" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-category" value="Category&#xa;─────────────────&#xa;- categoryId: Long&#xa;- categoryName: String&#xa;- categoryType: Enum&#xa;- status: String" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9E6;strokeColor=#E6B84C;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="580" y="72" width="150" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-item" value="Item&#xa;─────────────────&#xa;- itemId: Long&#xa;- itemName: String&#xa;- category: Category&#xa;- outlet: Outlet&#xa;- price: BigDecimal&#xa;- availability, status" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9E6;strokeColor=#E6B84C;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="580" y="178" width="160" height="95" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== COLUMN 5: DISCOUNT ========== -->
+        <mxCell id="lbl-disc" value="Discount" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="778" y="48" width="70" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-discount" value="Discount&#xa;─────────────────&#xa;- discountId: Long&#xa;- discountName: String&#xa;- discountType: Enum&#xa;- discountValue: Double&#xa;- startDate, endDate&#xa;- discountItems: List&lt;DiscountItem&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="760" y="72" width="180" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls-discountitem" value="DiscountItem&#xa;─────────────────&#xa;- discountItemId: Long&#xa;- discount: Discount&#xa;- item: Item" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="760" y="198" width="150" height="68" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== USER (standalone) ========== -->
+        <mxCell id="cls-user" value="User&#xa;─────────────────&#xa;- userId: Long&#xa;- username: String&#xa;- email: String&#xa;- role: Role&#xa;- status: String&#xa;- merchantId&#xa;- subMerchantId&#xa;- customerId" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9E6;strokeColor=#E6B84C;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="400" y="420" width="160" height="108" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== ASSOCIATIONS (thick, dark blue, minimal crossing) ========== -->
+        <mxCell id="assoc-province-district" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-province" target="cls-district">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-district-city" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-district" target="cls-city">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-merchant-sub" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-merchant" target="cls-submerchant">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-sub-outlet" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-submerchant" target="cls-outlet">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-merchant-outlet" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-merchant" target="cls-outlet">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-province" value="*  1" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0;exitY=0.25;entryX=1;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-province">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-district" value="*  1" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-district">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-city" value="*  1" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0;exitY=0.75;entryX=1;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-city">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-payment" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-payment">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-schedule" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-schedule">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-customer-favorite" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-customer" target="cls-favorite">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-customer-feedback" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-customer" target="cls-feedback">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-favorite" value="*  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=1;exitY=0.35;entryX=0;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-favorite">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-feedback" value="*  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=1;exitY=0.65;entryX=0;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-feedback">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-category-item" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-category" target="cls-item">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-outlet-item" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-outlet" target="cls-item">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-discount-discountitem" value="1  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endSize=5;startSize=5;" edge="1" parent="1" source="cls-discount" target="cls-discountitem">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="assoc-item-discountitem" value="*  *" style="endArrow=none;html=1;rounded=1;strokeWidth=2.5;strokeColor=#1565C0;fontStyle=1;fontSize=9;fontColor=#0D47A1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endSize=5;startSize=5;" edge="1" parent="1" source="cls-item" target="cls-discountitem">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,7 +1,10 @@
 package lk.icbt.findit.entity;
 
 public enum Role {
+    SYSADMIN,
     ADMIN,
-    CUSTOMER,
-    MERCHANT
+    USER,
+    MERCHANT,
+    SUBMERCHANT,
+    CUSTOMER
 }

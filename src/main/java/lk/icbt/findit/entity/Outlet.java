@@ -2,62 +2,79 @@ package lk.icbt.findit.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "outlets")
-@Data
+@Getter
+@Setter
 public class Outlet extends AbstractEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long outletId;
-
-    // Outlet basic details
+    @Column(name = "outlet_name")
     private String outletName;
+    @ManyToOne
+    @JoinColumn(name = "merchant_id")
+    private Merchant merchant;
+    @ManyToOne
+    @JoinColumn(name = "sub_merchant_id")
+    private SubMerchant subMerchant;
+    @Column(name = "business_registration_number")
+    private String businessRegistrationNumber;
+    @Column(name = "tax_identification_number")
+    private String taxIdentificationNumber;
+    @Column(name = "postal_code")
+    private String postalCode;
+    @ManyToOne
+    @JoinColumn(name = "province_id")
+    private Province province;
+    @ManyToOne
+    @JoinColumn(name = "district_id")
+    private District district;
+    @ManyToOne
+    @JoinColumn(name = "city_id")
+    private City city;
+    @Column(name = "contact_number")
+    private String contactNumber;
+    @Column(name = "email_address")
+    private String emailAddress;
+    @Column(name = "address_line_1")
+    private String addressLine1;
+    @Column(name = "address_line_2")
+    private String addressLine2;
     @Enumerated(EnumType.STRING)
+    @Column(name = "outlet_type")
     private OutletType outletType;
     @Enumerated(EnumType.STRING)
+    @Column(name = "business_category")
     private BusinessCategory businessCategory;
-
-    // Owner
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Merchant merchant;
-
-    // contact details
-    private String contactNumber;
-    private String emailAddress;
-
-    // Address details
-    private String addressLine1;
-    private String addressLine2;
-    private String city;
-    private String district;
-    private String province;
-    private String postalCode;
-
-    // Location (optional – useful for maps / GIS)
+    @Column(name = "latitude")
     private Double latitude;
+    @Column(name = "longitude")
     private Double longitude;
-
-    // Business registration details
-    private String businessRegistrationNumber;
-    private String taxIdentificationNumber;
-
-    // Bank details
+    @Column(name = "bank_name")
     private String bankName;
+    @Column(name = "bank_branch")
     private String bankBranch;
+    @Column(name = "account_number")
     private String accountNumber;
+    @Column(name = "account_holder_name")
     private String accountHolderName;
-
-    // Onboarding status
-    private String outletStatus;    // PENDING, APPROVED, REJECTED
-    private String Remarks;
-
-    // Onboarding status
-    private String onboardingStatus;    // PENDING, APPROVED, REJECTED
+    @Column(name = "status")
+    private String status;
+    @Column(name = "subscription_valid_until")
+    private java.util.Date subscriptionValidUntil;
+    @Column(name = "remarks")
+    private String remarks;
+    @Column(name = "onboarding_status")
+    private String onboardingStatus;
+    @Column(name = "onboarding_remarks")
     private String onboardingRemarks;
 
-    // Onboarding status
-    private String paymentStatus;    // PENDING, APPROVED, REJECTED
-    private String paymentRemarks;
+    @Column(name = "rating")
+    private Double rating;
+
 }

@@ -11,8 +11,20 @@ public class Customer extends AbstractEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "customer_id")
     private Long customerId;
-    @Column(name = "customer_name", nullable = false)
-    private String customerName;
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+    @Column(name = "last_name" )
+    private String lastName;
+    @Column(name = "nic")
+    private String nic;
+    @Column(name = "dob")
+    private String dob;
+    @Column(name = "gender")
+    private String gender;
+    @Column(name = "country_name", length = 100)
+    private String countryName;
+    @Column(name = "profile_image")
+    private String profileImage;
     @Column(name = "email", unique = true)
     private String email;
     @Column(name = "phone_number")
@@ -22,6 +34,4 @@ public class Customer extends AbstractEntity{
     private MembershipType membershipType;
     @Column(name = "status", nullable = false)
     private String status;
-    @Column(name = "picture")
-    private String picture;
 }
