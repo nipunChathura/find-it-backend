@@ -7,17 +7,30 @@ import lk.icbt.findit.dto.OutletAddDTO;
 import lk.icbt.findit.entity.*;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.*;
+import lk.icbt.findit.response.DiscountListItemResponse;
 import lk.icbt.findit.response.GetAllOutletsResponse;
+import lk.icbt.findit.response.MerchantDetailInfo;
+import lk.icbt.findit.response.OutletAssignedItemResponse;
+import lk.icbt.findit.response.OutletDetailResponse;
 import lk.icbt.findit.response.OutletListItemResponse;
 import lk.icbt.findit.response.OutletListResponse;
+import lk.icbt.findit.response.OutletSchedulesGroupedResponse;
 import lk.icbt.findit.response.OutletStatusResponse;
+import lk.icbt.findit.response.PaymentListItemResponse;
+import lk.icbt.findit.response.SubMerchantDetailInfo;
+import lk.icbt.findit.response.SubMerchantInfo;
+import lk.icbt.findit.service.DiscountService;
+import lk.icbt.findit.service.ItemService;
 import lk.icbt.findit.service.NotificationService;
 import lk.icbt.findit.service.OutletScheduleService;
 import lk.icbt.findit.service.OutletService;
+import lk.icbt.findit.service.PaymentService;
 import lk.icbt.findit.service.ServiceLoggingHelper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +54,17 @@ public class OutletServiceImpl implements OutletService {
     private final ProvinceRepository provinceRepository;
     private final DistrictRepository districtRepository;
     private final CityRepository cityRepository;
+    private final ItemRepository itemRepository;
     private final OutletScheduleService outletScheduleService;
     private final NotificationService notificationService;
+    private final ItemService itemService;
+    private final DiscountService discountService;
+    private PaymentService paymentService;
+
+    @Autowired
+    public void setPaymentService(@Lazy PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     @Override
     public List<OutletListResponse> listOutlets(String name, String status) {
@@ -67,6 +89,97 @@ public class OutletServiceImpl implements OutletService {
         }).collect(Collectors.toList());
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "listOutlets", "count", result.size());
         return result;
+    }
+
+    @Override
+    public List<OutletAssignedItemResponse> listOutletsByMerchantOrSubMerchant(Long merchantId, Long subMerchantId, String username) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "listOutletsByMerchantOrSubMerchant", "merchantId", merchantId, "subMerchantId", subMerchantId);
+        if (subMerchantId == null && merchantId == null) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Either merchantId or subMerchantId must be provided");
+        }
+        if (subMerchantId != null && merchantId != null) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Provide only merchantId or only subMerchantId, not both");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.USER_NOT_FOUND_CODE, "User not found"));
+        List<Outlet> list;
+        if (subMerchantId != null) {
+            if (user.getRole() != Role.SYSADMIN && user.getRole() != Role.ADMIN && (user.getSubMerchantId() == null || !user.getSubMerchantId().equals(subMerchantId))) {
+                throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Sub-merchant can only view their own outlets");
+            }
+            list = outletRepository.findBySubMerchant_SubMerchantId(subMerchantId);
+        } else {
+            if (user.getRole() != Role.SYSADMIN && user.getRole() != Role.ADMIN && (user.getMerchantId() == null || !user.getMerchantId().equals(merchantId))) {
+                throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Merchant can only view their own outlets");
+            }
+            list = outletRepository.findAllOutletsByMerchantId(merchantId);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        List<OutletAssignedItemResponse> result = list.stream()
+                .map(o -> mapToAssignedItem(o, now))
+                .collect(Collectors.toList());
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "listOutletsByMerchantOrSubMerchant", "count", result.size());
+        return result;
+    }
+
+    private OutletAssignedItemResponse mapToAssignedItem(Outlet o, LocalDateTime now) {
+        OutletAssignedItemResponse r = new OutletAssignedItemResponse();
+        r.setOutletId(o.getOutletId());
+        r.setMerchantId(o.getMerchant() != null ? o.getMerchant().getMerchantId() : null);
+        r.setSubMerchantId(o.getSubMerchant() != null ? o.getSubMerchant().getSubMerchantId() : null);
+        r.setMerchantName(o.getMerchant() != null ? o.getMerchant().getMerchantName() : null);
+        r.setSubMerchantName(o.getSubMerchant() != null ? o.getSubMerchant().getMerchantName() : null);
+        r.setOutletName(o.getOutletName());
+        r.setBusinessRegistrationNumber(o.getBusinessRegistrationNumber());
+        r.setTaxIdentificationNumber(o.getTaxIdentificationNumber());
+        r.setPostalCode(o.getPostalCode());
+        r.setProvinceId(o.getProvince() != null ? o.getProvince().getProvinceId() : null);
+        r.setDistrictId(o.getDistrict() != null ? o.getDistrict().getDistrictId() : null);
+        r.setCityId(o.getCity() != null ? o.getCity().getCityId() : null);
+        r.setProvinceName(o.getProvince() != null ? o.getProvince().getName() : null);
+        r.setDistrictName(o.getDistrict() != null ? o.getDistrict().getName() : null);
+        r.setCityName(o.getCity() != null ? o.getCity().getName() : null);
+        r.setContactNumber(o.getContactNumber());
+        r.setEmailAddress(o.getEmailAddress());
+        r.setAddressLine1(o.getAddressLine1());
+        r.setAddressLine2(o.getAddressLine2());
+        r.setOutletType(o.getOutletType());
+        r.setBusinessCategory(o.getBusinessCategory());
+        r.setLatitude(o.getLatitude());
+        r.setLongitude(o.getLongitude());
+        r.setBankName(o.getBankName());
+        r.setBankBranch(o.getBankBranch());
+        r.setAccountNumber(o.getAccountNumber());
+        r.setAccountHolderName(o.getAccountHolderName());
+        r.setRemarks(o.getRemarks());
+        r.setStatus(o.getStatus());
+        r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setRating(o.getRating());
+        String currentStatus = OutletStatusResponse.STATUS_CLOSED;
+        try {
+            currentStatus = outletScheduleService.getOutletStatus(o.getOutletId(), now).getStatus();
+        } catch (Exception ignored) { }
+        r.setCurrentStatus(currentStatus);
+        r.setItemCount(itemRepository.countByOutlet_OutletIdAndStatusNot(o.getOutletId(), Constants.ITEM_DELETED_STATUS));
+        if (o.getSubMerchant() != null) {
+            r.setSubMerchantInfo(toSubMerchantInfo(o.getSubMerchant()));
+        }
+        return r;
+    }
+
+    private static SubMerchantInfo toSubMerchantInfo(SubMerchant s) {
+        SubMerchantInfo info = new SubMerchantInfo();
+        info.setSubMerchantId(s.getSubMerchantId());
+        info.setMerchantName(s.getMerchantName());
+        info.setMerchantEmail(s.getMerchantEmail());
+        info.setMerchantNic(s.getMerchantNic());
+        info.setMerchantProfileImage(s.getMerchantProfileImage());
+        info.setMerchantAddress(s.getMerchantAddress());
+        info.setMerchantPhoneNumber(s.getMerchantPhoneNumber());
+        info.setMerchantType(s.getMerchantType());
+        info.setStatus(s.getStatus());
+        info.setInactiveReason(s.getInactiveReason());
+        return info;
     }
 
     @Override
@@ -116,6 +229,17 @@ public class OutletServiceImpl implements OutletService {
         if (Constants.OUTLET_PENDING_STATUS.equals(outletStatus)) {
             notificationService.notifyAdminsOfPendingItem("Outlet", saved.getOutletName(), "Outlet pending approval.");
         }
+        if (saved.getSubMerchant() != null && authenticatedUsername != null && !authenticatedUsername.isBlank()) {
+            User actor = userRepository.findByUsername(authenticatedUsername).orElse(null);
+            if (actor != null && actor.getRole() == Role.SUBMERCHANT && saved.getMerchant() != null) {
+                notificationService.notifySubMerchantActionToMerchantAndSubMerchant(
+                        saved.getMerchant().getMerchantId(),
+                        saved.getSubMerchant().getSubMerchantId(),
+                        saved.getSubMerchant().getMerchantName(),
+                        "Outlet added",
+                        "Outlet: " + saved.getOutletName());
+            }
+        }
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "addOutlet", "outletId", saved.getOutletId());
         return mapToDto(saved, "Outlet added successfully. Status: " + outletStatus + ". Free trial until " + outlet.getSubscriptionValidUntil() + ".");
     }
@@ -159,6 +283,16 @@ public class OutletServiceImpl implements OutletService {
         outlet.setStatus(Constants.OUTLET_ACTIVE_STATUS);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
+        if (saved.getSubMerchant() != null && saved.getMerchant() != null) {
+            List<Long> subMerchantUserIds = userRepository.findBySubMerchantIdAndRoleAndStatusNot(saved.getSubMerchant().getSubMerchantId(), Role.SUBMERCHANT, Constants.USER_DELETED_STATUS)
+                    .stream().map(User::getUserId).collect(Collectors.toList());
+            subMerchantUserIds.add(user.getUserId());
+            if (!subMerchantUserIds.isEmpty()) {
+                notificationService.notifyUserIds(subMerchantUserIds, "OUTLET_APPROVED",
+                        "Outlet approved",
+                        "Your outlet \"" + saved.getOutletName() + "\" has been approved by the merchant.");
+            }
+        }
         return mapToDto(saved, "Outlet approved successfully.");
     }
 
@@ -194,6 +328,14 @@ public class OutletServiceImpl implements OutletService {
         outlet.setStatus(Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
+        if (user.getRole() == Role.SUBMERCHANT && saved.getSubMerchant() != null && saved.getMerchant() != null) {
+            notificationService.notifySubMerchantActionToMerchantAndSubMerchant(
+                    saved.getMerchant().getMerchantId(),
+                    saved.getSubMerchant().getSubMerchantId(),
+                    saved.getSubMerchant().getMerchantName(),
+                    "Payment submitted",
+                    "Outlet: " + saved.getOutletName() + ". Status: PENDING_SUBSCRIPTION.");
+        }
         return mapToDto(saved, "Payment submitted. Awaiting admin verification.");
     }
 
@@ -238,6 +380,29 @@ public class OutletServiceImpl implements OutletService {
         applyUpdateToOutlet(outlet, dto);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
+        if (authenticatedUsername != null && !authenticatedUsername.isBlank()) {
+            User actor = userRepository.findByUsername(authenticatedUsername).orElse(null);
+            if (actor != null && saved.getSubMerchant() != null && saved.getMerchant() != null) {
+                if (actor.getRole() == Role.SUBMERCHANT) {
+                    notificationService.notifySubMerchantActionToMerchantAndSubMerchant(
+                            saved.getMerchant().getMerchantId(),
+                            saved.getSubMerchant().getSubMerchantId(),
+                            saved.getSubMerchant().getMerchantName(),
+                            "Outlet updated",
+                            "Outlet: " + saved.getOutletName());
+                } else if (actor.getRole() == Role.MERCHANT) {
+                    List<Long> subMerchantUserIds = userRepository.findBySubMerchantIdAndRoleAndStatusNot(
+                            saved.getSubMerchant().getSubMerchantId(), Role.SUBMERCHANT, Constants.USER_DELETED_STATUS)
+                            .stream().map(User::getUserId).collect(Collectors.toList());
+                    notificationService.notifyUserIds(subMerchantUserIds, "OUTLET_UPDATED",
+                            "Outlet updated by parent merchant",
+                            "Outlet \"" + saved.getOutletName() + "\" has been updated by the parent merchant.");
+                    notificationService.notifyMerchantUsersOfAction(actor.getMerchantId(), "OUTLET_UPDATED_BY_MERCHANT",
+                            "Outlet updated",
+                            "You updated outlet \"" + saved.getOutletName() + "\" for sub-merchant " + saved.getSubMerchant().getMerchantName() + ".");
+                }
+            }
+        }
         return mapToDto(saved, "Outlet updated successfully.");
     }
 
@@ -248,8 +413,9 @@ public class OutletServiceImpl implements OutletService {
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.OUTLET_NOT_FOUND_CODE, "Outlet not found"));
         String s = status != null ? status.trim() : "";
         if (!Constants.OUTLET_ACTIVE_STATUS.equals(s) && !Constants.OUTLET_PENDING_STATUS.equals(s)
+                && !Constants.OUTLET_REJECTED_STATUS.equals(s)
                 && !Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS.equals(s) && !Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS.equals(s)) {
-            throw new InvalidRequestException(ResponseCodes.OUTLET_NOT_PENDING_CODE, "Invalid outlet status");
+            throw new InvalidRequestException(ResponseCodes.OUTLET_NOT_PENDING_CODE, "Invalid outlet status. Allowed: ACTIVE, PENDING, REJECTED, PENDING_SUBSCRIPTION, EXPIRED_SUBSCRIPTION");
         }
         outlet.setStatus(s);
         outlet.setModifiedDatetime(new Date());
@@ -316,6 +482,123 @@ public class OutletServiceImpl implements OutletService {
     @Override
     public OutletListItemResponse toListItemResponse(Outlet outlet) {
         return mapToListItem(outlet);
+    }
+
+    @Override
+    public OutletDetailResponse getOutletDetails(Long outletId) {
+        ServiceLoggingHelper.logStart(log, SERVICE_NAME, "getOutletDetails", "outletId", outletId);
+        Outlet outlet = outletRepository.findById(outletId)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.OUTLET_NOT_FOUND_CODE, "Outlet not found"));
+        OutletDetailResponse response = new OutletDetailResponse();
+        response.setStatus(ResponseStatus.SUCCESS.getStatus());
+        response.setResponseCode(ResponseCodes.SUCCESS_CODE);
+        response.setResponseMessage("Success");
+        response.setOutlet(mapToListItem(outlet));
+//        response.setItems(itemService.getByOutletId(outletId));
+//        response.setDiscounts(discountService.list(null, null, outletId));
+//        response.setPayments(paymentService.list(outletId, null));
+        ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getOutletDetails", "outletId", outletId);
+        return response;
+    }
+
+    @Override
+    public OutletDetailResponse getOutletDetailsForMerchantApp(String username, Long outletId) {
+        ensureMerchantAppOutletAccess(username, outletId);
+        OutletDetailResponse response = getOutletDetails(outletId);
+        enrichWithMerchantAndSubMerchantInfo(response, outletId);
+        return response;
+    }
+
+    private void enrichWithMerchantAndSubMerchantInfo(OutletDetailResponse response, Long outletId) {
+        Outlet outlet = outletRepository.findById(outletId).orElse(null);
+        if (outlet == null) return;
+        Merchant merchant = outlet.getSubMerchant() != null ? outlet.getSubMerchant().getMerchant() : outlet.getMerchant();
+        if (merchant != null) {
+            response.setMerchantDetails(toMerchantDetailInfo(merchant));
+        }
+        response.setAssignedSubMerchant(outlet.getSubMerchant() != null);
+        if (outlet.getSubMerchant() != null) {
+            response.setSubMerchantDetails(toSubMerchantDetailInfo(outlet.getSubMerchant()));
+        }
+    }
+
+    private static MerchantDetailInfo toMerchantDetailInfo(Merchant m) {
+        MerchantDetailInfo info = new MerchantDetailInfo();
+        info.setMerchantId(m.getMerchantId());
+        info.setMerchantName(m.getMerchantName());
+        info.setMerchantEmail(m.getMerchantEmail());
+        info.setMerchantNic(m.getMerchantNic());
+        info.setMerchantProfileImage(m.getMerchantProfileImage());
+        info.setMerchantAddress(m.getMerchantAddress());
+        info.setMerchantPhoneNumber(m.getMerchantPhoneNumber());
+        info.setMerchantType(m.getMerchantType());
+        info.setMerchantStatus(m.getStatus());
+        info.setInactiveReason(m.getInactiveReason());
+        return info;
+    }
+
+    private static SubMerchantDetailInfo toSubMerchantDetailInfo(SubMerchant s) {
+        SubMerchantDetailInfo info = new SubMerchantDetailInfo();
+        info.setSubMerchantId(s.getSubMerchantId());
+        info.setMerchantId(s.getMerchant() != null ? s.getMerchant().getMerchantId() : null);
+        info.setParentMerchantName(s.getMerchant() != null ? s.getMerchant().getMerchantName() : null);
+        info.setMerchantName(s.getMerchantName());
+        info.setMerchantEmail(s.getMerchantEmail());
+        info.setMerchantNic(s.getMerchantNic());
+        info.setMerchantProfileImage(s.getMerchantProfileImage());
+        info.setMerchantAddress(s.getMerchantAddress());
+        info.setMerchantPhoneNumber(s.getMerchantPhoneNumber());
+        info.setMerchantType(s.getMerchantType());
+        info.setSubMerchantStatus(s.getStatus());
+        info.setInactiveReason(s.getInactiveReason());
+        return info;
+    }
+
+    @Override
+    public List<PaymentListItemResponse> getPaymentDetailsForMerchantApp(String username, Long outletId) {
+        ensureMerchantAppOutletAccess(username, outletId);
+        return paymentService.list(outletId, null);
+    }
+
+    @Override
+    public OutletSchedulesGroupedResponse getScheduleDetailsForMerchantApp(String username, Long outletId) {
+        ensureMerchantAppOutletAccess(username, outletId);
+        return outletScheduleService.getSchedulesGroupedByType(outletId, null, null);
+    }
+
+    @Override
+    public List<DiscountListItemResponse> getDiscountDetailsForMerchantApp(String username, Long outletId) {
+        ensureMerchantAppOutletAccess(username, outletId);
+        return discountService.list(null, null, outletId);
+    }
+
+    private void ensureMerchantAppOutletAccess(String username, Long outletId) {
+        if (username == null || username.isBlank()) {
+            throw new InvalidRequestException(ResponseCodes.FAILED_CODE, "Not authenticated");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.USER_NOT_FOUND_CODE, "User not found"));
+        if (user.getRole() != Role.MERCHANT && user.getRole() != Role.SUBMERCHANT) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Only merchant or sub-merchant can access outlet details");
+        }
+        Outlet outlet = outletRepository.findById(outletId)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.OUTLET_NOT_FOUND_CODE, "Outlet not found"));
+        boolean allowed = false;
+        if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
+            if (outlet.getMerchant() != null && user.getMerchantId().equals(outlet.getMerchant().getMerchantId()) && outlet.getSubMerchant() == null) {
+                allowed = true;
+            } else if (outlet.getSubMerchant() != null && outlet.getSubMerchant().getMerchant() != null
+                    && user.getMerchantId().equals(outlet.getSubMerchant().getMerchant().getMerchantId())) {
+                allowed = true;
+            }
+        } else if (user.getRole() == Role.SUBMERCHANT && user.getSubMerchantId() != null) {
+            if (outlet.getSubMerchant() != null && user.getSubMerchantId().equals(outlet.getSubMerchant().getSubMerchantId())) {
+                allowed = true;
+            }
+        }
+        if (!allowed) {
+            throw new InvalidRequestException(ResponseCodes.OUTLET_NOT_FOUND_CODE, "Outlet not found or access denied");
+        }
     }
 
     private void applyUpdateToOutlet(Outlet outlet, OutletAddDTO dto) {

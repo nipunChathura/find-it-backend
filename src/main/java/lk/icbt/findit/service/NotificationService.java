@@ -52,4 +52,30 @@ public interface NotificationService {
      * @param body     notification body
      */
     void notifyUserIds(List<Long> userIds, String type, String title, String body);
+
+    /**
+     * Notifies the main merchant (all users with role MERCHANT for the given merchantId) when a sub-merchant performs an action.
+     * Message format: "Sub-merchant [subMerchantName] did this action: [actionTitle] - [actionBody]"
+     *
+     * @param merchantId     main merchant ID (parent of the sub-merchant)
+     * @param subMerchantName sub-merchant display name
+     * @param actionTitle    short title of the action (e.g. "Outlet added", "Payment submitted")
+     * @param actionBody     optional detail (e.g. outlet name, payment amount)
+     */
+    void notifyMerchantOfSubMerchantAction(Long merchantId, String subMerchantName, String actionTitle, String actionBody);
+
+    /**
+     * When a sub-merchant performs an action: notifies BOTH the main merchant (parent) and the sub-merchant users.
+     * Main merchant gets: "Sub-merchant [name] did: [actionTitle] - [actionBody]".
+     * Sub-merchant users get: "Your action: [actionTitle] - [actionBody]".
+     */
+    void notifySubMerchantActionToMerchantAndSubMerchant(Long merchantId, Long subMerchantId, String subMerchantName, String actionTitle, String actionBody);
+
+    /**
+     * When main merchant performs an action on an outlet owned by a sub-merchant: notifies BOTH the main merchant (actor) and the sub-merchant users.
+     * Main merchant users get: "[actionTitle] - [actionBody]".
+     * Sub-merchant users get their own message (caller should call notifyUserIds for them separately, or use this if we add subMerchantId).
+     * This overload notifies only the main merchant users (for "you did this" confirmation).
+     */
+    void notifyMerchantUsersOfAction(Long merchantId, String type, String title, String body);
 }

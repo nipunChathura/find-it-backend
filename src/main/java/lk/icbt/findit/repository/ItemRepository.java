@@ -55,4 +55,14 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     /** Count items belonging to outlets in the given list (for merchant app dashboard). */
     long countByOutlet_OutletIdIn(List<Long> outletIds);
+
+    /** Count items belonging to outlets in the given list, excluding given status (e.g. DELETED). */
+    long countByOutlet_OutletIdInAndStatusNot(List<Long> outletIds, String status);
+
+    /** Count items for one outlet, excluding given status (e.g. DELETED). Used for assigned outlets list. */
+    long countByOutlet_OutletIdAndStatusNot(Long outletId, String status);
+
+    /** Item counts per outlet (outletId, count) for given outlet IDs, excluding given status. */
+    @Query("SELECT i.outlet.outletId, COUNT(i) FROM Item i WHERE i.outlet.outletId IN :outletIds AND (i.status IS NULL OR i.status <> :excludeStatus) GROUP BY i.outlet.outletId")
+    List<Object[]> countByOutletIdInGroupByOutletId(@Param("outletIds") List<Long> outletIds, @Param("excludeStatus") String excludeStatus);
 }

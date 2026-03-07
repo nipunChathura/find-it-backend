@@ -25,4 +25,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     /** Pending payments for the given outlet IDs (for merchant app dashboard). */
     List<Payment> findByOutlet_OutletIdInAndStatus(List<Long> outletIds, String status);
+
+    /** All payments for the given outlet IDs (for merchant app payment list). */
+    List<Payment> findByOutlet_OutletIdInOrderByPaymentIdDesc(List<Long> outletIds);
 }

@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +30,7 @@ public class ItemController {
     @PostMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<ItemResponse> create(@Valid @RequestBody ItemRequest request) {
-        ItemResponse result = itemService.create(request);
+        ItemResponse result = itemService.create(request, getAuthenticatedUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
@@ -67,7 +69,7 @@ public class ItemController {
     public ResponseEntity<ItemResponse> update(
             @PathVariable Long itemId,
             @Valid @RequestBody ItemRequest request) {
-        ItemResponse result = itemService.update(itemId, request);
+        ItemResponse result = itemService.update(itemId, request, getAuthenticatedUsername());
         return ResponseEntity.ok(result);
     }
 
@@ -77,5 +79,10 @@ public class ItemController {
     public ResponseEntity<Void> delete(@PathVariable Long itemId) {
         itemService.delete(itemId);
         return ResponseEntity.noContent().build();
+    }
+
+    private String getAuthenticatedUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? auth.getName() : null;
     }
 }

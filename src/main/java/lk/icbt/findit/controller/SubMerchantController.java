@@ -19,6 +19,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Sub-merchant APIs. Add sub-merchant: SYSADMIN, ADMIN (any merchant), or MERCHANT (own merchant only).
  */
@@ -30,12 +32,26 @@ public class SubMerchantController {
     private final SubMerchantService subMerchantService;
     private final UserService userService;
 
+    /**
+     * Get sub-merchant list by merchant ID. SYSADMIN/ADMIN can pass any merchantId; MERCHANT can only pass their own.
+     * Example: GET /api/sub-merchants?merchantId=1
+     */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT')")
+    @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<SubMerchantResponse>> listByMerchantId(@RequestParam Long merchantId) {
+        String username = getAuthenticatedUsername();
+        List<SubMerchantResponse> list = subMerchantService.listByMerchantId(merchantId, username);
+        return ResponseEntity.ok(list);
+    }
+
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT')")
     @PostMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<SubMerchantResponse> addSubMerchant(@Valid @RequestBody SubMerchantAddRequest request) {
         SubMerchantAddDTO dto = new SubMerchantAddDTO();
         BeanUtils.copyProperties(request, dto);
+        dto.setPassword(request.getPassword());
+        dto.setUsername(request.getUsername());
         String username = getAuthenticatedUsername();
         SubMerchantAddDTO result = subMerchantService.addSubMerchantWithAuth(dto, username);
         SubMerchantResponse response = new SubMerchantResponse();

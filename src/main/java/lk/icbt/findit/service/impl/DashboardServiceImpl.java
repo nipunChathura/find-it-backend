@@ -79,7 +79,8 @@ public class DashboardServiceImpl implements DashboardService {
     public MerchantSummaryResponse getMerchantSummary() {
         long totalMerchants = merchantRepository.countByStatus(Constants.MERCHANT_ACTIVE_STATUS)
                 + merchantRepository.countByStatus(Constants.MERCHANT_INACTIVE_STATUS)
-                + merchantRepository.countByStatus(Constants.MERCHANT_PENDING_STATUS);
+                + merchantRepository.countByStatus(Constants.MERCHANT_PENDING_STATUS)
+                + merchantRepository.countByStatus(Constants.MERCHANT_REJECTED_STATUS);
         long totalOutlets = outletRepository.count();
 
         List<Object[]> categoryCounts = outletRepository.countOutletsByBusinessCategory();

@@ -10,6 +10,9 @@ public interface ItemService {
 
     ItemResponse create(ItemRequest request);
 
+    /** Create item. When authenticatedUsername is provided and user is SUBMERCHANT, notifies parent merchant. */
+    ItemResponse create(ItemRequest request, String authenticatedUsername);
+
     ItemResponse getById(Long itemId);
 
     List<ItemListItemResponse> getByOutletId(Long outletId);
@@ -17,6 +20,9 @@ public interface ItemService {
     List<ItemListItemResponse> search(String search, Long categoryId, Long outletId, String status, Boolean availability);
 
     ItemResponse update(Long itemId, ItemRequest request);
+
+    /** Update item. When authenticatedUsername is provided and user is SUBMERCHANT, notifies parent merchant. */
+    ItemResponse update(Long itemId, ItemRequest request, String authenticatedUsername);
 
     void delete(Long itemId);
 }

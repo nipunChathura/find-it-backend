@@ -3,14 +3,11 @@ package lk.icbt.findit.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-import java.util.List;
-
+/** Lightweight sub-merchant info for embedding in outlet detail response. */
 @Data
-@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SubMerchantResponse extends Response {
+public class SubMerchantDetailInfo {
     private Long subMerchantId;
     private Long merchantId;
     private String parentMerchantName;
@@ -22,8 +19,5 @@ public class SubMerchantResponse extends Response {
     private String merchantPhoneNumber;
     private MerchantType merchantType;
     private String subMerchantStatus;
-    /** Number of outlets assigned to this sub-merchant. */
-    private Long outletCount;
-    /** Names of outlets assigned to this sub-merchant. */
-    private List<String> outletNames;
+    private String inactiveReason;
 }

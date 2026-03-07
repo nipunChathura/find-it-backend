@@ -7,6 +7,8 @@ import lk.icbt.findit.request.OutletScheduleRequest;
 import lk.icbt.findit.request.OutletUpdateRequest;
 import lk.icbt.findit.response.MessageResponse;
 import lk.icbt.findit.response.DiscountListItemResponse;
+import lk.icbt.findit.response.OutletAssignedItemResponse;
+import lk.icbt.findit.response.OutletDetailResponse;
 import lk.icbt.findit.response.OutletListResponse;
 import lk.icbt.findit.response.OutletResponse;
 import lk.icbt.findit.response.OutletScheduleItemResponse;
@@ -55,6 +57,33 @@ public class OutletController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(outletService.listOutlets(name, status));
+    }
+
+    /**
+     * List outlets by merchant or sub-merchant with full details. Pass merchantId to get all outlets for that merchant
+     * (direct + sub-merchant outlets). Pass subMerchantId to get only that sub-merchant's outlets.
+     * Each item includes full outlet details, currentStatus (OPEN/CLOSED), and subMerchantInfo when outlet has a sub-merchant.
+     * Example: GET /api/outlets/assigned?merchantId=1 or ?subMerchantId=2
+     */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
+    @GetMapping(value = "/assigned", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<OutletAssignedItemResponse>> listOutletsAssigned(
+            @RequestParam(required = false) Long merchantId,
+            @RequestParam(required = false) Long subMerchantId) {
+        String username = getAuthenticatedUsername();
+        return ResponseEntity.ok(outletService.listOutletsByMerchantOrSubMerchant(merchantId, subMerchantId, username));
+    }
+
+    /**
+     * Get full outlet details by ID: outlet info, items, discounts, and payments for that outlet.
+     * GET /api/outlets/{outletId}/details
+     */
+    @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
+    @GetMapping(value = "/{outletId}/details", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<OutletDetailResponse> getOutletDetails(@PathVariable Long outletId) {
+        return ResponseEntity.ok(outletService.getOutletDetails(outletId));
     }
 
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")

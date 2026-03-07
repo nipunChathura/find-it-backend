@@ -5,9 +5,15 @@ import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
 import lombok.Data;
 
+import java.util.Date;
+
+/**
+ * Full outlet details for GET /api/outlets/assigned. Includes current open/closed status
+ * and optional subMerchantInfo when the outlet is assigned to a sub-merchant.
+ */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OutletListItemResponse {
+public class OutletAssignedItemResponse {
 
     private Long outletId;
     private Long merchantId;
@@ -38,8 +44,15 @@ public class OutletListItemResponse {
     private String accountHolderName;
     private String remarks;
     private String status;
-    private java.util.Date subscriptionValidUntil;
+    private Date subscriptionValidUntil;
     private Double rating;
-    /** Number of items for this outlet (excluding DELETED). */
+
+    /** OPEN or CLOSED based on current time and outlet schedule. */
+    private String currentStatus;
+
+    /** Number of items in this outlet (excluding DELETED). */
     private Long itemCount;
+
+    /** Present when outlet is assigned to a sub-merchant (subMerchantId != null). */
+    private SubMerchantInfo subMerchantInfo;
 }
