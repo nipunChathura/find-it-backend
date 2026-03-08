@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    @Query("SELECT i FROM Item i LEFT JOIN FETCH i.category LEFT JOIN FETCH i.outlet WHERE i.outlet.outletId = :outletId ORDER BY i.itemName")
+    @Query("SELECT i FROM Item i LEFT JOIN FETCH i.category LEFT JOIN FETCH i.outlet WHERE i.outlet.outletId = :outletId AND (i.status IS NULL OR i.status <> 'DELETED') ORDER BY i.itemName")
     List<Item> findByOutletId(@Param("outletId") Long outletId);
 
     @Query("SELECT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o WHERE " +
@@ -21,7 +21,8 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             "(:categoryId IS NULL OR i.category.categoryId = :categoryId) AND " +
             "(:outletId IS NULL OR i.outlet.outletId = :outletId) AND " +
             "(:status IS NULL OR :status = '' OR i.status = :status) AND " +
-            "(:availability IS NULL OR i.availability = :availability)")
+            "(:availability IS NULL OR i.availability = :availability) AND " +
+            "(i.status <> 'DELETED' OR :status = 'DELETED')")
     List<Item> search(
             @Param("search") String search,
             @Param("categoryId") Long categoryId,

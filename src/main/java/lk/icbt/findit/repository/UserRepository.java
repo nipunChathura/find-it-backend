@@ -37,6 +37,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Same as findBySubMerchantIdAndRole but excludes users with the given status (e.g. DELETED). */
     List<User> findBySubMerchantIdAndRoleAndStatusNot(Long subMerchantId, Role role, String status);
 
+    /** Users for the given sub-merchant IDs with role SUBMERCHANT, excluding given status (for profile image lookup). */
+    List<User> findBySubMerchantIdInAndRoleAndStatusNot(List<Long> subMerchantIds, Role role, String status);
+
     /** Find all users with any of the given roles (e.g. SYSADMIN, ADMIN for admin-type users). */
     List<User> findByRoleIn(List<Role> roles);
 

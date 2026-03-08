@@ -89,6 +89,9 @@ public class ItemServiceImpl implements ItemService {
     public ItemResponse getById(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found"));
+        if (Constants.ITEM_DELETED_STATUS.equals(item.getStatus())) {
+            throw new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found");
+        }
         Set<Long> withDiscount = itemIdsWithActiveDiscount(Collections.singletonList(item.getItemId()));
         return toResponse(item, withDiscount, null);
     }
@@ -167,7 +170,8 @@ public class ItemServiceImpl implements ItemService {
     public void delete(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found"));
-        itemRepository.delete(item);
+        item.setStatus(Constants.ITEM_DELETED_STATUS);
+        itemRepository.save(item);
     }
 
     private static String trim(String s) {

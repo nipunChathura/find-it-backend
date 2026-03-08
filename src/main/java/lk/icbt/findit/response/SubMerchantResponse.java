@@ -22,6 +22,7 @@ public class SubMerchantResponse extends Response {
     private String merchantPhoneNumber;
     private MerchantType merchantType;
     private String subMerchantStatus;
+    private String profileImage;
     /** Number of outlets assigned to this sub-merchant. */
     private Long outletCount;
     /** Names of outlets assigned to this sub-merchant. */

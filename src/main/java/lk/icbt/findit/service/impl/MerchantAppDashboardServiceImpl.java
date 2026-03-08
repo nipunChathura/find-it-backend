@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -94,8 +95,11 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
 
         List<SubMerchantResponse> subMerchantList = Collections.emptyList();
         if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
-            subMerchantList = subMerchantRepository.findByMerchant_MerchantId(user.getMerchantId()).stream()
-                    .map(this::toSubMerchantResponse)
+            List<SubMerchant> subMerchants = subMerchantRepository.findByMerchant_MerchantId(user.getMerchantId());
+            java.util.Map<Long, String> subMerchantIdToProfileImage = getSubMerchantProfileImages(
+                    subMerchants.stream().map(SubMerchant::getSubMerchantId).collect(Collectors.toList()));
+            subMerchantList = subMerchants.stream()
+                    .map(s -> toSubMerchantResponse(s, subMerchantIdToProfileImage.get(s.getSubMerchantId())))
                     .collect(Collectors.toList());
         }
 
@@ -151,7 +155,23 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
         return r;
     }
 
-    private SubMerchantResponse toSubMerchantResponse(SubMerchant s) {
+    /** Builds map subMerchantId -> profileImageUrl from users table (first SUBMERCHANT user per sub-merchant). */
+    private Map<Long, String> getSubMerchantProfileImages(List<Long> subMerchantIds) {
+        if (subMerchantIds == null || subMerchantIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        List<User> users = userRepository.findBySubMerchantIdInAndRoleAndStatusNot(
+                subMerchantIds, Role.SUBMERCHANT, Constants.USER_DELETED_STATUS);
+        Map<Long, String> map = new HashMap<>();
+        for (User u : users) {
+            if (u.getSubMerchantId() != null && !map.containsKey(u.getSubMerchantId()) && u.getProfileImageUrl() != null && !u.getProfileImageUrl().isBlank()) {
+                map.put(u.getSubMerchantId(), u.getProfileImageUrl());
+            }
+        }
+        return map;
+    }
+
+    private SubMerchantResponse toSubMerchantResponse(SubMerchant s, String profileImage) {
         SubMerchantResponse r = new SubMerchantResponse();
         r.setStatus(ResponseStatus.SUCCESS.getStatus());
         r.setResponseCode(ResponseCodes.SUCCESS_CODE);
@@ -167,6 +187,7 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
         r.setMerchantPhoneNumber(s.getMerchantPhoneNumber());
         r.setMerchantType(s.getMerchantType());
         r.setSubMerchantStatus(s.getStatus());
+        r.setProfileImage(profileImage);
         return r;
     }
 

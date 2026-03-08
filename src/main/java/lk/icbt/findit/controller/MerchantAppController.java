@@ -215,6 +215,7 @@ public class MerchantAppController {
     @ResponseBody
     public ResponseEntity<List<PaymentListItemResponse>> getOutletPaymentDetails(@PathVariable Long outletId) {
         String username = getAuthenticatedUsername();
+        System.out.println("username = " + username);
         if (username == null || username.isBlank()) {
             return ResponseEntity.status(401).build();
         }

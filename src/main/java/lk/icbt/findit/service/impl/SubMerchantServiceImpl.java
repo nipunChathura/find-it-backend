@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -405,18 +406,19 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         return result;
     }
 
-    /** Builds SubMerchantResponse list with outletCount and outletNames set from repository. */
+    /** Builds SubMerchantResponse list with outletCount, outletNames, and profileImage (from users table) set. */
     private List<SubMerchantResponse> buildSubMerchantListWithOutlets(List<SubMerchant> list) {
         if (list == null || list.isEmpty()) {
             return Collections.emptyList();
         }
         List<Long> subMerchantIds = list.stream().map(SubMerchant::getSubMerchantId).collect(Collectors.toList());
+        Map<Long, String> subMerchantIdToProfileImage = getSubMerchantProfileImages(subMerchantIds);
         List<Outlet> outlets = outletRepository.findBySubMerchant_SubMerchantIdIn(subMerchantIds);
         Map<Long, List<Outlet>> outletsBySubMerchant = outlets.stream()
                 .filter(o -> o.getSubMerchant() != null)
                 .collect(Collectors.groupingBy(o -> o.getSubMerchant().getSubMerchantId()));
         return list.stream().map(s -> {
-            SubMerchantResponse r = toSubMerchantResponse(s);
+            SubMerchantResponse r = toSubMerchantResponse(s, subMerchantIdToProfileImage.get(s.getSubMerchantId()));
             List<Outlet> subOutlets = outletsBySubMerchant.getOrDefault(s.getSubMerchantId(), Collections.emptyList());
             r.setOutletCount((long) subOutlets.size());
             r.setOutletNames(subOutlets.stream().map(Outlet::getOutletName).collect(Collectors.toList()));
@@ -424,7 +426,23 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         }).collect(Collectors.toList());
     }
 
-    private SubMerchantResponse toSubMerchantResponse(SubMerchant s) {
+    /** Profile image from users table (first SUBMERCHANT user per sub-merchant, status not DELETED). */
+    private Map<Long, String> getSubMerchantProfileImages(List<Long> subMerchantIds) {
+        if (subMerchantIds == null || subMerchantIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        List<User> users = userRepository.findBySubMerchantIdInAndRoleAndStatusNot(
+                subMerchantIds, Role.SUBMERCHANT, Constants.USER_DELETED_STATUS);
+        Map<Long, String> map = new HashMap<>();
+        for (User u : users) {
+            if (u.getSubMerchantId() != null && !map.containsKey(u.getSubMerchantId()) && u.getProfileImageUrl() != null && !u.getProfileImageUrl().isBlank()) {
+                map.put(u.getSubMerchantId(), u.getProfileImageUrl());
+            }
+        }
+        return map;
+    }
+
+    private SubMerchantResponse toSubMerchantResponse(SubMerchant s, String profileImage) {
         SubMerchantResponse r = new SubMerchantResponse();
         r.setStatus(ResponseStatus.SUCCESS.getStatus());
         r.setResponseCode(ResponseCodes.SUCCESS_CODE);
@@ -440,6 +458,7 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         r.setMerchantPhoneNumber(s.getMerchantPhoneNumber());
         r.setMerchantType(s.getMerchantType());
         r.setSubMerchantStatus(s.getStatus());
+        r.setProfileImage(profileImage);
         return r;
     }
 }
