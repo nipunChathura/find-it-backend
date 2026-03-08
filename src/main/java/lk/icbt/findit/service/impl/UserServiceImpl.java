@@ -136,6 +136,25 @@ public class UserServiceImpl implements UserService {
                             "User not found"
                     );
                 });
+        if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
+            Merchant merchant = merchantRepository.findById(user.getMerchantId()).orElse(null);
+            if (merchant != null && !isAllowedMerchantStatus(merchant.getStatus())) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE, "Merchant status is not active");
+                throw new InvalidRequestException(
+                        ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE,
+                        "Status is not active. Please contact administration."
+                );
+            }
+        } else if (user.getRole() == Role.SUBMERCHANT && user.getSubMerchantId() != null) {
+            SubMerchant subMerchant = subMerchantRepository.findById(user.getSubMerchantId()).orElse(null);
+            if (subMerchant != null && !isAllowedMerchantStatus(subMerchant.getStatus())) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE, "Sub-merchant status is not active");
+                throw new InvalidRequestException(
+                        ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE,
+                        "Status is not active. Please contact merchant."
+                );
+            }
+        }
         MerchantLoginDTO result = new MerchantLoginDTO();
         result.setStatus(loginResult.getStatus());
         result.setResponseCode(loginResult.getResponseCode());
@@ -166,6 +185,10 @@ public class UserServiceImpl implements UserService {
         }
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginMerchant", "userId", user.getUserId());
         return result;
+    }
+
+    private static boolean isAllowedMerchantStatus(String status) {
+        return status != null && (Constants.MERCHANT_ACTIVE_STATUS.equals(status) || Constants.USER_APPROVED_STATUS.equals(status));
     }
 
     private static MainMerchantInfo toMainMerchantInfo(Merchant m) {
