@@ -10,6 +10,7 @@ import lk.icbt.findit.config.ApiRequestLoggingFilter;
 import lk.icbt.findit.security.CustomUserDetailsService;
 import lk.icbt.findit.security.JwtService;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -35,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * JUnit tests for Item module APIs.
  * Covers: Create item, Get by outlet, Get by id, Search, Update, Delete.
  */
+@Tag("unit")
 @WebMvcTest(ItemController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")

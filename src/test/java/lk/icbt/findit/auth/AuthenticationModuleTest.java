@@ -15,6 +15,7 @@ import lk.icbt.findit.config.ApiRequestLoggingFilter;
 import lk.icbt.findit.security.CustomUserDetailsService;
 import lk.icbt.findit.security.JwtService;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * JUnit tests for Authentication module APIs.
  * Covers: User login, User registration, Auth password change/forgot, Merchant login/forgot password.
  */
+@Tag("unit")
 @WebMvcTest(controllers = {UserController.class, AuthController.class})
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
