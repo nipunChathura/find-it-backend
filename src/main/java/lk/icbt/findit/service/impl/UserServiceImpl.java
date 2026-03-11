@@ -18,7 +18,13 @@ import lk.icbt.findit.dto.UserAddDTO;
 import lk.icbt.findit.dto.UserApprovalDTO;
 import lk.icbt.findit.dto.UserUpdateDTO;
 import lk.icbt.findit.dto.UserRegistrationDTO;
+import lk.icbt.findit.entity.Merchant;
+import lk.icbt.findit.entity.SubMerchant;
+import lk.icbt.findit.repository.MerchantRepository;
+import lk.icbt.findit.repository.SubMerchantRepository;
 import lk.icbt.findit.repository.UserRepository;
+import lk.icbt.findit.response.MainMerchantInfo;
+import lk.icbt.findit.response.SubMerchantInfo;
 import lk.icbt.findit.response.UserResponse;
 import lk.icbt.findit.security.JwtService;
 import lk.icbt.findit.service.NotificationService;
@@ -49,6 +55,8 @@ public class UserServiceImpl implements UserService {
     private static final String SERVICE_NAME = "UserService";
 
     private final UserRepository userRepository;
+    private final MerchantRepository merchantRepository;
+    private final SubMerchantRepository subMerchantRepository;
     private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -128,6 +136,25 @@ public class UserServiceImpl implements UserService {
                             "User not found"
                     );
                 });
+        if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
+            Merchant merchant = merchantRepository.findById(user.getMerchantId()).orElse(null);
+            if (merchant != null && !isAllowedMerchantStatus(merchant.getStatus())) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE, "Merchant status is not active");
+                throw new InvalidRequestException(
+                        ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE,
+                        "Status is not active. Please contact administration."
+                );
+            }
+        } else if (user.getRole() == Role.SUBMERCHANT && user.getSubMerchantId() != null) {
+            SubMerchant subMerchant = subMerchantRepository.findById(user.getSubMerchantId()).orElse(null);
+            if (subMerchant != null && !isAllowedMerchantStatus(subMerchant.getStatus())) {
+                ServiceLoggingHelper.logValidationError(log, ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE, "Sub-merchant status is not active");
+                throw new InvalidRequestException(
+                        ResponseCodes.MERCHANT_STATUS_NOT_ACTIVE_CODE,
+                        "Status is not active. Please contact merchant."
+                );
+            }
+        }
         MerchantLoginDTO result = new MerchantLoginDTO();
         result.setStatus(loginResult.getStatus());
         result.setResponseCode(loginResult.getResponseCode());
@@ -140,8 +167,58 @@ public class UserServiceImpl implements UserService {
         result.setMerchantId(user.getMerchantId());
         result.setSubMerchantId(user.getSubMerchantId());
         result.setProfileImageUrl(loginResult.getProfileImageUrl());
+        if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
+            merchantRepository.findById(user.getMerchantId()).ifPresent(m -> result.setMainMerchantInfo(toMainMerchantInfo(m)));
+        } else if (user.getRole() == Role.SUBMERCHANT && user.getSubMerchantId() != null) {
+            subMerchantRepository.findById(user.getSubMerchantId()).ifPresent(s -> {
+                result.setSubMerchantInfo(toSubMerchantInfo(s));
+                if (s.getMerchant() != null) {
+                    result.setMainMerchantInfo(toMainMerchantInfo(s.getMerchant()));
+                }
+            });
+        }
+        try {
+            String loginTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss"));
+            notificationService.saveNotification(user.getUserId(), "MERCHANT_LOGIN", "Login successful", "You logged in at " + loginTime);
+        } catch (Exception e) {
+            log.warn("Failed to save merchant login notification for user {}: {}", user.getUserId(), e.getMessage());
+        }
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "loginMerchant", "userId", user.getUserId());
         return result;
+    }
+
+    private static boolean isAllowedMerchantStatus(String status) {
+        return status != null && (Constants.MERCHANT_ACTIVE_STATUS.equals(status) || Constants.USER_APPROVED_STATUS.equals(status));
+    }
+
+    private static MainMerchantInfo toMainMerchantInfo(Merchant m) {
+        MainMerchantInfo info = new MainMerchantInfo();
+        info.setMerchantId(m.getMerchantId());
+        info.setMerchantName(m.getMerchantName());
+        info.setMerchantEmail(m.getMerchantEmail());
+        info.setMerchantNic(m.getMerchantNic());
+        info.setMerchantProfileImage(m.getMerchantProfileImage());
+        info.setMerchantAddress(m.getMerchantAddress());
+        info.setMerchantPhoneNumber(m.getMerchantPhoneNumber());
+        info.setMerchantType(m.getMerchantType());
+        info.setStatus(m.getStatus());
+        info.setInactiveReason(m.getInactiveReason());
+        return info;
+    }
+
+    private static SubMerchantInfo toSubMerchantInfo(SubMerchant s) {
+        SubMerchantInfo info = new SubMerchantInfo();
+        info.setSubMerchantId(s.getSubMerchantId());
+        info.setMerchantName(s.getMerchantName());
+        info.setMerchantEmail(s.getMerchantEmail());
+        info.setMerchantNic(s.getMerchantNic());
+        info.setMerchantProfileImage(s.getMerchantProfileImage());
+        info.setMerchantAddress(s.getMerchantAddress());
+        info.setMerchantPhoneNumber(s.getMerchantPhoneNumber());
+        info.setMerchantType(s.getMerchantType());
+        info.setStatus(s.getStatus());
+        info.setInactiveReason(s.getInactiveReason());
+        return info;
     }
 
     @Override

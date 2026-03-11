@@ -6,15 +6,19 @@ import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.entity.Category;
 import lk.icbt.findit.entity.Item;
 import lk.icbt.findit.entity.Outlet;
+import lk.icbt.findit.entity.Role;
+import lk.icbt.findit.entity.User;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.CategoryRepository;
 import lk.icbt.findit.repository.DiscountItemRepository;
 import lk.icbt.findit.repository.ItemRepository;
 import lk.icbt.findit.repository.OutletRepository;
+import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.request.ItemRequest;
 import lk.icbt.findit.response.ItemListItemResponse;
 import lk.icbt.findit.response.ItemResponse;
 import lk.icbt.findit.service.ItemService;
+import lk.icbt.findit.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +34,18 @@ public class ItemServiceImpl implements ItemService {
     private final CategoryRepository categoryRepository;
     private final OutletRepository outletRepository;
     private final DiscountItemRepository discountItemRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public ItemResponse create(ItemRequest request) {
+        return create(request, null);
+    }
+
+    @Override
+    @Transactional
+    public ItemResponse create(ItemRequest request, String authenticatedUsername) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CATEGORY_NOT_FOUND_CODE, "Category not found"));
         Outlet outlet = outletRepository.findById(request.getOutletId())
@@ -57,6 +69,19 @@ public class ItemServiceImpl implements ItemService {
         item.setVersion(1);
 
         Item saved = itemRepository.save(item);
+        if (authenticatedUsername != null && !authenticatedUsername.isBlank()) {
+            userRepository.findByUsername(authenticatedUsername).ifPresent(actor -> {
+                if (actor.getRole() == Role.SUBMERCHANT && saved.getOutlet() != null
+                        && saved.getOutlet().getSubMerchant() != null && saved.getOutlet().getMerchant() != null) {
+                    notificationService.notifySubMerchantActionToMerchantAndSubMerchant(
+                            saved.getOutlet().getMerchant().getMerchantId(),
+                            saved.getOutlet().getSubMerchant().getSubMerchantId(),
+                            saved.getOutlet().getSubMerchant().getMerchantName(),
+                            "Item added",
+                            "Outlet: " + saved.getOutlet().getOutletName() + ". Item: " + saved.getItemName());
+                }
+            });
+        }
         return toResponse(saved, itemIdsWithActiveDiscount(Collections.singletonList(saved.getItemId())), "Item created successfully.");
     }
 
@@ -64,6 +89,9 @@ public class ItemServiceImpl implements ItemService {
     public ItemResponse getById(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found"));
+        if (Constants.ITEM_DELETED_STATUS.equals(item.getStatus())) {
+            throw new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found");
+        }
         Set<Long> withDiscount = itemIdsWithActiveDiscount(Collections.singletonList(item.getItemId()));
         return toResponse(item, withDiscount, null);
     }
@@ -92,6 +120,12 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemResponse update(Long itemId, ItemRequest request) {
+        return update(itemId, request, null);
+    }
+
+    @Override
+    @Transactional
+    public ItemResponse update(Long itemId, ItemRequest request, String authenticatedUsername) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found"));
 
@@ -115,6 +149,19 @@ public class ItemServiceImpl implements ItemService {
         item.setModifiedDatetime(new Date());
 
         Item saved = itemRepository.save(item);
+        if (authenticatedUsername != null && !authenticatedUsername.isBlank()) {
+            userRepository.findByUsername(authenticatedUsername).ifPresent(actor -> {
+                if (actor.getRole() == Role.SUBMERCHANT && saved.getOutlet() != null
+                        && saved.getOutlet().getSubMerchant() != null && saved.getOutlet().getMerchant() != null) {
+                    notificationService.notifySubMerchantActionToMerchantAndSubMerchant(
+                            saved.getOutlet().getMerchant().getMerchantId(),
+                            saved.getOutlet().getSubMerchant().getSubMerchantId(),
+                            saved.getOutlet().getSubMerchant().getMerchantName(),
+                            "Item updated",
+                            "Outlet: " + saved.getOutlet().getOutletName() + ". Item: " + saved.getItemName());
+                }
+            });
+        }
         return toResponse(saved, itemIdsWithActiveDiscount(Collections.singletonList(saved.getItemId())), "Item updated successfully.");
     }
 
@@ -123,7 +170,8 @@ public class ItemServiceImpl implements ItemService {
     public void delete(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.ITEM_NOT_FOUND_CODE, "Item not found"));
-        itemRepository.delete(item);
+        item.setStatus(Constants.ITEM_DELETED_STATUS);
+        itemRepository.save(item);
     }
 
     private static String trim(String s) {

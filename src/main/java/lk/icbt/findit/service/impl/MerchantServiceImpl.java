@@ -333,8 +333,8 @@ public class MerchantServiceImpl implements MerchantService {
         merchant.setModifiedDatetime(new Date());
         Merchant saved = merchantRepository.save(merchant);
 
-        // Update linked user(s) to ACTIVE so merchant can log in
-        List<User> users = userRepository.findByMerchantIdAndRole(saved.getMerchantId(), Role.MERCHANT);
+        // Update linked user(s) to ACTIVE so merchant can log in (exclude DELETED)
+        List<User> users = userRepository.findByMerchantIdAndRoleAndStatusNot(saved.getMerchantId(), Role.MERCHANT, Constants.USER_DELETED_STATUS);
         for (User user : users) {
             user.setStatus(Constants.USER_ACTIVE_STATUS);
             user.setModifiedDatetime(new Date());
@@ -425,23 +425,27 @@ public class MerchantServiceImpl implements MerchantService {
         String newStatus = dto.getNewStatus();
         if (newStatus == null || (!Constants.MERCHANT_ACTIVE_STATUS.equals(newStatus)
                 && !Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus)
-                && !Constants.MERCHANT_PENDING_STATUS.equals(newStatus))) {
+                && !Constants.MERCHANT_PENDING_STATUS.equals(newStatus)
+                && !Constants.MERCHANT_REJECTED_STATUS.equals(newStatus))) {
             throw new InvalidRequestException(
                     ResponseCodes.INVALID_MERCHANT_STATUS_CODE,
-                    "Status must be ACTIVE, INACTIVE, or PENDING"
+                    "Status must be ACTIVE, INACTIVE, PENDING, or REJECTED"
             );
         }
         merchant.setStatus(newStatus);
-        merchant.setInactiveReason(Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus) ? dto.getInactiveReason() : null);
+        boolean setReason = Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus) || Constants.MERCHANT_REJECTED_STATUS.equals(newStatus);
+        merchant.setInactiveReason(setReason ? dto.getInactiveReason() : null);
         merchant.setModifiedDatetime(new Date());
         Merchant saved = merchantRepository.save(merchant);
-        List<User> merchantUsers = userRepository.findByMerchantIdAndRole(saved.getMerchantId(), Role.MERCHANT);
+        List<User> merchantUsers = userRepository.findByMerchantIdAndRoleAndStatusNot(saved.getMerchantId(), Role.MERCHANT, Constants.USER_DELETED_STATUS);
         List<Long> merchantUserIds = merchantUsers.stream().map(User::getUserId).toList();
-        if (Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus)) {
+        if (Constants.MERCHANT_INACTIVE_STATUS.equals(newStatus) || Constants.MERCHANT_REJECTED_STATUS.equals(newStatus)) {
             String reason = (dto.getInactiveReason() != null && !dto.getInactiveReason().isBlank()) ? " Reason: " + dto.getInactiveReason() : ".";
-            notificationService.notifyUserIds(merchantUserIds, "MERCHANT_REJECTED",
-                    "Merchant application not approved",
-                    "Your merchant account \"" + saved.getMerchantName() + "\" has been set to inactive." + reason);
+            String title = Constants.MERCHANT_REJECTED_STATUS.equals(newStatus) ? "Merchant application rejected" : "Merchant application not approved";
+            String body = Constants.MERCHANT_REJECTED_STATUS.equals(newStatus)
+                    ? "Your merchant account \"" + saved.getMerchantName() + "\" has been rejected." + reason
+                    : "Your merchant account \"" + saved.getMerchantName() + "\" has been set to inactive." + reason;
+            notificationService.notifyUserIds(merchantUserIds, "MERCHANT_REJECTED", title, body);
         }
         return mapToStatusChangeDto(saved, "Merchant status updated successfully.");
     }

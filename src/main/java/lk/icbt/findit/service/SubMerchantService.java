@@ -2,7 +2,10 @@ package lk.icbt.findit.service;
 
 import lk.icbt.findit.dto.SubMerchantAddDTO;
 import lk.icbt.findit.dto.SubMerchantApprovalDTO;
+import lk.icbt.findit.response.SubMerchantResponse;
 import lk.icbt.findit.response.SubMerchantWithOutletsResponse;
+
+import java.util.List;
 
 public interface SubMerchantService {
 
@@ -30,4 +33,12 @@ public interface SubMerchantService {
      * Get sub-merchant by ID with all assigned outlets.
      */
     SubMerchantWithOutletsResponse getSubMerchantWithOutlets(Long subMerchantId);
+
+    /** List sub-merchants for the authenticated merchant (MERCHANT role only). Optional name/email search. */
+    List<SubMerchantResponse> listByMerchantUsername(String username, String nameSearch);
+
+    /**
+     * List sub-merchants by merchant ID. SYSADMIN/ADMIN can pass any merchantId; MERCHANT can only pass their own.
+     */
+    List<SubMerchantResponse> listByMerchantId(Long merchantId, String username);
 }

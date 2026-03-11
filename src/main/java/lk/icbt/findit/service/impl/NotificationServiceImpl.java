@@ -10,6 +10,7 @@ import lk.icbt.findit.entity.Notification;
 import lk.icbt.findit.entity.Role;
 import lk.icbt.findit.entity.User;
 import lk.icbt.findit.exception.InvalidRequestException;
+import lk.icbt.findit.common.Constants;
 import lk.icbt.findit.repository.NotificationRepository;
 import lk.icbt.findit.repository.UserRepository;
 import lk.icbt.findit.request.SendNotificationRequest;
@@ -110,6 +111,51 @@ public class NotificationServiceImpl implements NotificationService {
             } catch (Exception e) {
                 log.warn("Failed to notify userId={} type={}: {}", userId, type, e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public void notifyMerchantOfSubMerchantAction(Long merchantId, String subMerchantName, String actionTitle, String actionBody) {
+        if (merchantId == null) return;
+        List<User> merchantUsers = userRepository.findByMerchantIdAndRoleAndStatusNot(merchantId, Role.MERCHANT, Constants.USER_DELETED_STATUS);
+        if (merchantUsers.isEmpty()) {
+            log.debug("No merchant users found to notify of sub-merchant action: merchantId={}", merchantId);
+            return;
+        }
+        String title = "Sub-merchant action: " + (actionTitle != null ? actionTitle : "Action");
+        String body = (subMerchantName != null && !subMerchantName.isBlank() ? "Sub-merchant " + subMerchantName + " " : "Sub-merchant ")
+                + (actionBody != null && !actionBody.isBlank() ? actionBody : "performed this action.");
+        List<Long> userIds = merchantUsers.stream().map(User::getUserId).collect(Collectors.toList());
+        notifyUserIds(userIds, "SUB_MERCHANT_ACTION", title, body);
+    }
+
+    @Override
+    public void notifySubMerchantActionToMerchantAndSubMerchant(Long merchantId, Long subMerchantId, String subMerchantName, String actionTitle, String actionBody) {
+        if (merchantId != null) {
+            List<User> merchantUsers = userRepository.findByMerchantIdAndRoleAndStatusNot(merchantId, Role.MERCHANT, Constants.USER_DELETED_STATUS);
+            if (!merchantUsers.isEmpty()) {
+                String title = "Sub-merchant action: " + (actionTitle != null ? actionTitle : "Action");
+                String body = (subMerchantName != null && !subMerchantName.isBlank() ? "Sub-merchant " + subMerchantName + " " : "Sub-merchant ")
+                        + (actionBody != null && !actionBody.isBlank() ? actionBody : "performed this action.");
+                notifyUserIds(merchantUsers.stream().map(User::getUserId).collect(Collectors.toList()), "SUB_MERCHANT_ACTION", title, body);
+            }
+        }
+        if (subMerchantId != null) {
+            List<User> subMerchantUsers = userRepository.findBySubMerchantIdAndRoleAndStatusNot(subMerchantId, Role.SUBMERCHANT, Constants.USER_DELETED_STATUS);
+            if (!subMerchantUsers.isEmpty()) {
+                String selfTitle = "Your action: " + (actionTitle != null ? actionTitle : "Action");
+                String selfBody = actionBody != null && !actionBody.isBlank() ? actionBody : "Action recorded.";
+                notifyUserIds(subMerchantUsers.stream().map(User::getUserId).collect(Collectors.toList()), "SUB_MERCHANT_ACTION_SELF", selfTitle, selfBody);
+            }
+        }
+    }
+
+    @Override
+    public void notifyMerchantUsersOfAction(Long merchantId, String type, String title, String body) {
+        if (merchantId == null) return;
+        List<User> merchantUsers = userRepository.findByMerchantIdAndRoleAndStatusNot(merchantId, Role.MERCHANT, Constants.USER_DELETED_STATUS);
+        if (!merchantUsers.isEmpty()) {
+            notifyUserIds(merchantUsers.stream().map(User::getUserId).collect(Collectors.toList()), type != null ? type : "MERCHANT_ACTION", title, body);
         }
     }
 

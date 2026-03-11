@@ -24,6 +24,7 @@ public class Constants {
     public final static String MERCHANT_ACTIVE_STATUS = "ACTIVE";
     public final static String MERCHANT_INACTIVE_STATUS = "INACTIVE";
     public final static String MERCHANT_PENDING_STATUS = "PENDING";
+    public final static String MERCHANT_REJECTED_STATUS = "REJECTED";
     public final static String MERCHANT_DELETED_STATUS = "DELETED";
 
     // category status
@@ -34,6 +35,7 @@ public class Constants {
     // outlet status
     public final static String OUTLET_ACTIVE_STATUS = "ACTIVE";
     public final static String OUTLET_PENDING_STATUS = "PENDING";
+    public final static String OUTLET_REJECTED_STATUS = "REJECTED";
     public final static String OUTLET_PENDING_SUBSCRIPTION_STATUS = "PENDING_SUBSCRIPTION";
     public final static String OUTLET_EXPIRED_SUBSCRIPTION_STATUS = "EXPIRED_SUBSCRIPTION";
 

@@ -5,6 +5,8 @@ import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -20,4 +22,9 @@ public class SubMerchantResponse extends Response {
     private String merchantPhoneNumber;
     private MerchantType merchantType;
     private String subMerchantStatus;
+    private String profileImage;
+    /** Number of outlets assigned to this sub-merchant. */
+    private Long outletCount;
+    /** Names of outlets assigned to this sub-merchant. */
+    private List<String> outletNames;
 }

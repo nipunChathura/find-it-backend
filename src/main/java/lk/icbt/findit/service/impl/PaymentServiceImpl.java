@@ -130,6 +130,17 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public List<PaymentListItemResponse> listForOutletIds(List<Long> outletIds, String status) {
+        if (outletIds == null || outletIds.isEmpty()) return Collections.emptyList();
+        String statusParam = (status != null && !status.isBlank()) ? status.trim() : null;
+        List<Payment> list = statusParam != null
+                ? paymentRepository.findByOutlet_OutletIdInAndStatus(outletIds, statusParam)
+                : paymentRepository.findByOutlet_OutletIdInOrderByPaymentIdDesc(outletIds);
+        if (list.isEmpty()) return Collections.emptyList();
+        return list.stream().map(this::toListItem).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public PaymentResponse update(Long paymentId, PaymentRequest request) {
         Payment payment = paymentRepository.findById(paymentId)

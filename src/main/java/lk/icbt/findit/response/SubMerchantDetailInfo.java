@@ -1,0 +1,23 @@
+package lk.icbt.findit.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lk.icbt.findit.entity.MerchantType;
+import lombok.Data;
+
+/** Lightweight sub-merchant info for embedding in outlet detail response. */
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class SubMerchantDetailInfo {
+    private Long subMerchantId;
+    private Long merchantId;
+    private String parentMerchantName;
+    private String merchantName;
+    private String merchantEmail;
+    private String merchantNic;
+    private String merchantProfileImage;
+    private String merchantAddress;
+    private String merchantPhoneNumber;
+    private MerchantType merchantType;
+    private String subMerchantStatus;
+    private String inactiveReason;
+}

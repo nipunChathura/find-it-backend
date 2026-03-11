@@ -6,7 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * Response for merchant / sub-merchant login. Includes JWT token and user/merchant context.
+ * Response for merchant / sub-merchant login. Includes JWT token, user context,
+ * and mainMerchantInfo / subMerchantInfo objects.
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -20,4 +21,8 @@ public class MerchantLoginResponse extends Response {
     private Long merchantId;
     private Long subMerchantId;
     private String profileImageUrl;
+    /** Full main merchant details (when role = MERCHANT, or parent when role = SUBMERCHANT). */
+    private MainMerchantInfo mainMerchantInfo;
+    /** Sub-merchant details (when role = SUBMERCHANT only). */
+    private SubMerchantInfo subMerchantInfo;
 }

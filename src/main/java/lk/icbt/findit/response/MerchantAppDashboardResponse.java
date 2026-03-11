@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * Merchant app dashboard data: outlet counts, total items, and pending payments.
+ * Merchant app dashboard data: outlet counts, total items, pending payments, and lists of outlets, payments, sub-merchants.
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -20,4 +20,10 @@ public class MerchantAppDashboardResponse extends Response {
     private Long pendingPaymentCount;
     /** List of pending payments for the merchant/sub-merchant outlets. */
     private List<PaymentListItemResponse> pendingPayments;
+    /** Outlets belonging to the merchant (or sub-merchant). */
+    private List<OutletListItemResponse> outlets;
+    /** All payments for the merchant/sub-merchant outlets. */
+    private List<PaymentListItemResponse> payments;
+    /** Sub-merchants under the main merchant (MERCHANT role only; empty for SUBMERCHANT). */
+    private List<SubMerchantResponse> subMerchants;
 }
