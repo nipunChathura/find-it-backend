@@ -45,10 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Merchant app API. Public endpoints for merchant/sub-merchant login and onboarding
- * (self-registration). Use these from the merchant-facing mobile or web app.
- */
+
 @RestController
 @RequestMapping("/api/merchant-app")
 @RequiredArgsConstructor
@@ -63,10 +60,7 @@ public class MerchantAppController {
     private final UserRepository userRepository;
     private final OutletRepository outletRepository;
 
-    /**
-     * Merchant or sub-merchant login with username and password. Public.
-     * Returns JWT token and user/merchant context (role, merchantId, subMerchantId, etc.).
-     */
+    
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<MerchantLoginResponse> login(@Valid @RequestBody UserRequest request) {
@@ -79,12 +73,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Merchant or sub-merchant onboarding (self-registration). Public.
-     * When parentMerchantId is null or not provided, creates a main merchant and user with role MERCHANT.
-     * When parentMerchantId is set, creates a sub-merchant under that parent and user with role SUBMERCHANT
-     * (subject to parent merchant approval).
-     */
+    
     @PostMapping(value = "/onboarding", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<MerchantResponse> onboarding(@Valid @RequestBody MerchantOnboardingRequest request) {
@@ -97,10 +86,7 @@ public class MerchantAppController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get dashboard data for the authenticated merchant or sub-merchant.
-     * Returns total outlet count, active outlet count, total items, pending payment count, and list of pending payments.
-     */
+    
     @GetMapping(value = "/dashboard", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<MerchantAppDashboardResponse> getDashboard() {
@@ -112,9 +98,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Update merchant profile. MERCHANT role only. Sub-merchant profile update not supported here.
-     */
+    
     @PutMapping(value = "/profile", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<MerchantResponse> updateProfile(@Valid @RequestBody MerchantRequest request) {
@@ -134,9 +118,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Change password for the authenticated merchant or sub-merchant.
-     */
+    
     @PutMapping(value = "/password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Response> changePassword(@Valid @RequestBody UserRequest request) {
@@ -155,9 +137,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Change profile image. Upload image via POST /api/images/upload?type=profile, then send the returned fileName here.
-     */
+    
     @PutMapping(value = "/profile/image", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<UserResponse> changeProfileImage(@Valid @RequestBody ProfileImageChangeRequest request) {
@@ -173,9 +153,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * Get payment list for the authenticated merchant's or sub-merchant's outlets. Optional query: status (e.g. PENDING, APPROVED).
-     */
+    
     @GetMapping(value = "/payments", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<PaymentListItemResponse>> getPaymentList(
@@ -193,10 +171,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(list);
     }
 
-    /**
-     * Get outlet details by outlet ID. MERCHANT or SUBMERCHANT only. Returns full details (outlet info, items,
-     * discounts, payments) only if the outlet belongs to the authenticated user's merchant or sub-merchant.
-     */
+    
     @GetMapping(value = "/outlets/{outletId}/details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<OutletDetailResponse> getOutletDetails(@PathVariable Long outletId) {
@@ -208,9 +183,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get payment details list for the given outlet. MERCHANT or SUBMERCHANT only; outlet must belong to the user.
-     */
+    
     @GetMapping(value = "/outlets/{outletId}/payment-details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<PaymentListItemResponse>> getOutletPaymentDetails(@PathVariable Long outletId) {
@@ -222,9 +195,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(outletService.getPaymentDetailsForMerchantApp(username, outletId));
     }
 
-    /**
-     * Get schedule details (grouped by type) for the given outlet. MERCHANT or SUBMERCHANT only; outlet must belong to the user.
-     */
+    
     @GetMapping(value = "/outlets/{outletId}/schedule-details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<OutletSchedulesGroupedResponse> getOutletScheduleDetails(@PathVariable Long outletId) {
@@ -235,9 +206,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(outletService.getScheduleDetailsForMerchantApp(username, outletId));
     }
 
-    /**
-     * Get discount details list for the given outlet. MERCHANT or SUBMERCHANT only; outlet must belong to the user.
-     */
+    
     @GetMapping(value = "/outlets/{outletId}/discount-details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<DiscountListItemResponse>> getOutletDiscountDetails(@PathVariable Long outletId) {
@@ -248,10 +217,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(outletService.getDiscountDetailsForMerchantApp(username, outletId));
     }
 
-    /**
-     * Get sub-merchant list. MERCHANT role only. Returns sub-merchants under the authenticated merchant.
-     * Optional query param: name – filter by sub-merchant name or email (case-insensitive contains).
-     */
+    
     @GetMapping(value = "/sub-merchants", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<SubMerchantResponse>> getSubMerchantList(
@@ -264,10 +230,7 @@ public class MerchantAppController {
         return ResponseEntity.ok(list);
     }
 
-    /**
-     * Add sub-merchant. MERCHANT role only. Merchant ID is taken from the authenticated user.
-     * Sub-merchant is created with ACTIVE status (no approval needed when added by own merchant).
-     */
+    
     @PostMapping(value = "/sub-merchants", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<SubMerchantResponse> addSubMerchant(@Valid @RequestBody SubMerchantAddByMerchantRequest request) {

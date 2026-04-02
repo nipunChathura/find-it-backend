@@ -35,10 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Outlet APIs. Base URL: /api/outlets.
- * List outlets (name/status filter, currentStatus OPEN/CLOSED), get/update outlet, opening hours (schedules, status).
- */
+
 @RestController
 @RequestMapping("/api/outlets")
 @RequiredArgsConstructor
@@ -49,7 +46,7 @@ public class OutletController {
     private final DiscountService discountService;
     private final FeedbackService feedbackService;
 
-    /** 1. List outlets. Query: name (optional), status (optional). Response includes currentStatus (OPEN/CLOSED). */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -59,12 +56,7 @@ public class OutletController {
         return ResponseEntity.ok(outletService.listOutlets(name, status));
     }
 
-    /**
-     * List outlets by merchant or sub-merchant with full details. Pass merchantId to get all outlets for that merchant
-     * (direct + sub-merchant outlets). Pass subMerchantId to get only that sub-merchant's outlets.
-     * Each item includes full outlet details, currentStatus (OPEN/CLOSED), and subMerchantInfo when outlet has a sub-merchant.
-     * Example: GET /api/outlets/assigned?merchantId=1 or ?subMerchantId=2
-     */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "/assigned", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -75,10 +67,7 @@ public class OutletController {
         return ResponseEntity.ok(outletService.listOutletsByMerchantOrSubMerchant(merchantId, subMerchantId, username));
     }
 
-    /**
-     * Get full outlet details by ID: outlet info, items, discounts, and payments for that outlet.
-     * GET /api/outlets/{outletId}/details
-     */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "/{outletId}/details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -140,7 +129,7 @@ public class OutletController {
         return ResponseEntity.ok(response);
     }
 
-    /** Get current available discounts for the given outlet (ACTIVE and today within startDate–endDate). */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
     @GetMapping(value = "/{outletId}/discounts", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -149,7 +138,7 @@ public class OutletController {
         return ResponseEntity.ok(list);
     }
 
-    /** Get list of feedbacks for the given outlet (newest first). */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
     @GetMapping(value = "/{outletId}/feedbacks", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -157,7 +146,7 @@ public class OutletController {
         return ResponseEntity.ok(feedbackService.listByOutletId(outletId));
     }
 
-    /** Get feedback count for the given outlet. */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
     @GetMapping(value = "/{outletId}/feedbacks/count", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -165,9 +154,9 @@ public class OutletController {
         return ResponseEntity.ok(feedbackService.getOutletFeedbackCount(outletId));
     }
 
-    // ---------- Outlet opening hours / schedule ----------
+    
 
-    /** 3. Check outlet open status. Query: datetime (optional, ISO-8601 e.g. 2026-03-05T11:00). */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "/{outletId}/status", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -179,7 +168,7 @@ public class OutletController {
         return ResponseEntity.ok(response);
     }
 
-    /** 2. Get outlet schedules grouped by type. Optional: date (YYYY-MM-DD), dayOfWeek (e.g. MONDAY). */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @GetMapping(value = "/{outletId}/schedules", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -210,7 +199,7 @@ public class OutletController {
         return ResponseEntity.ok(outletScheduleService.updateSchedule(outletId, scheduleId, request));
     }
 
-    /** 6. Delete schedule. Returns success message. */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT')")
     @DeleteMapping(value = "/{outletId}/schedules/{scheduleId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody

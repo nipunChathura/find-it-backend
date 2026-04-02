@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** Response for GET /api/outlets/{id}/schedules - schedules grouped by type. */
+
 @Data
 @Builder
 @NoArgsConstructor

@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Country API. Get all countries with optional search by name. Public for customer app (e.g. onboarding).
- */
+
 @RestController
 @RequestMapping("/api/countries")
 @RequiredArgsConstructor

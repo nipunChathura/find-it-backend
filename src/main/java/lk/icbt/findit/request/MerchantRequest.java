@@ -8,9 +8,7 @@ import jakarta.validation.constraints.Size;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 
-/**
- * Request for merchant API endpoints (e.g. onboarding).
- */
+
 @Data
 public class MerchantRequest {
 

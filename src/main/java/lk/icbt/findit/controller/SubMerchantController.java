@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Sub-merchant APIs. Add sub-merchant: SYSADMIN, ADMIN (any merchant), or MERCHANT (own merchant only).
- */
+
 @RestController
 @RequestMapping("/api/sub-merchants")
 @RequiredArgsConstructor
@@ -32,10 +30,7 @@ public class SubMerchantController {
     private final SubMerchantService subMerchantService;
     private final UserService userService;
 
-    /**
-     * Get sub-merchant list by merchant ID. SYSADMIN/ADMIN can pass any merchantId; MERCHANT can only pass their own.
-     * Example: GET /api/sub-merchants?merchantId=1
-     */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT')")
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<SubMerchantResponse>> listByMerchantId(@RequestParam Long merchantId) {

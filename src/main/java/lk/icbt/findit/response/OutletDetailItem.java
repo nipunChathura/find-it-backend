@@ -3,7 +3,7 @@ package lk.icbt.findit.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
-/** Outlet details embedded in customer favorite response */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutletDetailItem {

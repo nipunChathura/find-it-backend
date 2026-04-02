@@ -39,10 +39,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Admin APIs. All endpoints require authenticated user (JWT Bearer token).
- * User approval: SYSADMIN only. Merchant approval: SYSADMIN or ADMIN.
- */
+
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor

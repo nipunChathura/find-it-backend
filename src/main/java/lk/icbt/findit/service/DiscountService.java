@@ -14,7 +14,7 @@ public interface DiscountService {
 
     List<DiscountListItemResponse> list(String status, Long itemId, Long outletId);
 
-    /** Current available discounts for the outlet (ACTIVE and today within startDate–endDate). */
+    
     List<DiscountListItemResponse> listCurrentByOutletId(Long outletId);
 
     DiscountResponse update(Long discountId, DiscountRequest request);

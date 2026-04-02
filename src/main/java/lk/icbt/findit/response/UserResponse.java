@@ -7,10 +7,7 @@ import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
-/**
- * Single response class for all user API endpoints.
- * Only the fields relevant to each endpoint are populated; others may be null.
- */
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -39,10 +39,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * JUnit API performance tests for POST /api/customer-app/outlets/nearest.
- * Run with: mvn test -Dtest=CustomerAppNearestOutletPerformanceTest
- */
+
 @Tag("performance")
 @WebMvcTest(CustomerAppController.class)
 @AutoConfigureMockMvc(addFilters = false)

@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 
-/**
- * Main (parent) merchant details in login response. Used in mainMerchantInfo.
- */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MainMerchantInfo {

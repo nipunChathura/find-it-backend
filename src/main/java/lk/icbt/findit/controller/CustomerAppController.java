@@ -44,9 +44,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Customer mobile/app API. Endpoints for the customer-facing application (login, profile, etc.).
- */
+
 @RestController
 @RequestMapping("/api/customer-app")
 @RequiredArgsConstructor
@@ -63,9 +61,7 @@ public class CustomerAppController {
     private final ItemService itemService;
     private final NotificationService notificationService;
 
-    /**
-     * Customer login with email and password. Public. Returns JWT token and customer context.
-     */
+    
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerLoginResponse> login(@Valid @RequestBody CustomerLoginRequest request) {
@@ -77,10 +73,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Change the authenticated customer's profile image. Upload image first via POST /api/images/upload?type=profile,
-     * then send the returned fileName here. Sends an in-app notification on success.
-     */
+    
     @PutMapping(value = "/profile/image", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<UserResponse> changeProfileImage(@Valid @RequestBody ProfileImageChangeRequest request) {
@@ -89,26 +82,17 @@ public class CustomerAppController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * Search nearest outlets by item name. Uses customer location (lat/long), max distance (km),
-     * and optional category and outlet type. Returns only outlets that are currently OPEN and
-     * have the matching item available; each outlet includes its matching items list and
-     * is_favorite, customer_favorite_id and nickname when the outlet is in the customer's favorites.
-     */
+    
     @PostMapping(value = "/outlets/nearest", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<NearestOutletSearchResponse> searchNearestOutlets(@Valid @RequestBody NearestOutletSearchRequest request) {
         User user = getAuthenticatedCustomer();
-        Long customerId = user.getCustomerId(); // may be null; then is_favorite will be false for all
+        Long customerId = user.getCustomerId(); 
         NearestOutletSearchResponse response = nearestOutletSearchService.searchNearestOutlets(request, customerId);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Search items. Request query params (all optional): search (name/description), categoryId, outletId, status, availability.
-     * Example: GET /api/customer-app/items/search?search=Coffee&categoryId=1&outletId=5&availability=true
-     * Returns list of items matching the criteria. CUSTOMER only.
-     */
+    
     @GetMapping(value = "/items/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<ItemListItemResponse>> searchItems(
@@ -122,9 +106,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(list);
     }
 
-    /**
-     * Create a search history entry. Request may include customerId; for customer-app it must match the authenticated customer and is saved to the table.
-     */
+    
     @PostMapping(value = "/search-history", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerSearchHistoryResponse> createSearchHistory(@Valid @RequestBody CustomerSearchHistoryRequest request) {
@@ -141,9 +123,7 @@ public class CustomerAppController {
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get search history list for the authenticated customer (newest first).
-     */
+    
     @GetMapping(value = "/search-history", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<CustomerSearchHistoryResponse>> listSearchHistory() {
@@ -152,9 +132,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(customerSearchHistoryService.listByCustomerId(user.getCustomerId()));
     }
 
-    /**
-     * Get a single search history entry by id (must belong to the authenticated customer).
-     */
+    
     @GetMapping(value = "/search-history/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerSearchHistoryResponse> getSearchHistory(@PathVariable Long id) {
@@ -163,9 +141,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(customerSearchHistoryService.getById(id, user.getCustomerId()));
     }
 
-    /**
-     * Update a search history entry (must belong to the authenticated customer).
-     */
+    
     @PutMapping(value = "/search-history/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerSearchHistoryResponse> updateSearchHistory(
@@ -178,9 +154,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Delete a search history entry (must belong to the authenticated customer).
-     */
+    
     @DeleteMapping(value = "/search-history/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Response> deleteSearchHistory(@PathVariable Long id) {
@@ -194,9 +168,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Save feedback for an outlet. Authenticated customer only. Body: outletId, feedbackText (optional), rating (optional).
-     */
+    
     @PostMapping(value = "/feedback", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<FeedbackResponse> saveFeedback(@Valid @RequestBody FeedbackRequest request) {
@@ -207,9 +179,7 @@ public class CustomerAppController {
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * List feedbacks submitted by the authenticated customer (newest first).
-     */
+    
     @GetMapping(value = "/feedback", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<FeedbackResponse>> listMyFeedback() {
@@ -218,11 +188,9 @@ public class CustomerAppController {
         return ResponseEntity.ok(feedbackService.listByCustomerId(user.getCustomerId()));
     }
 
-    // ---------- Customer favorites (outlet + nickname) ----------
+    
 
-    /**
-     * Add an outlet to favorites. Body: outletId (required), nickname (optional). Returns favorite with outlet details and nickname.
-     */
+    
     @PostMapping(value = "/favorites", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerFavoriteResponse> createFavorite(@Valid @RequestBody CustomerFavoriteRequest request) {
@@ -233,9 +201,7 @@ public class CustomerAppController {
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get favorites for the authenticated customer. Returns list with outlet details and nickname for each.
-     */
+    
     @GetMapping(value = "/favorites", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<List<CustomerFavoriteResponse>> listMyFavorites() {
@@ -244,9 +210,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(customerFavoriteService.listByCustomerId(user.getCustomerId()));
     }
 
-    /**
-     * Get a single favorite by id (must belong to the authenticated customer).
-     */
+    
     @GetMapping(value = "/favorites/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerFavoriteResponse> getFavorite(@PathVariable Long id) {
@@ -255,9 +219,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(customerFavoriteService.getById(id, user.getCustomerId()));
     }
 
-    /**
-     * Update a favorite (nickname and/or outlet). Must belong to the authenticated customer.
-     */
+    
     @PutMapping(value = "/favorites/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<CustomerFavoriteResponse> updateFavorite(
@@ -270,9 +232,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Remove a favorite. Must belong to the authenticated customer.
-     */
+    
     @DeleteMapping(value = "/favorites/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Response> deleteFavorite(@PathVariable Long id) {
@@ -287,9 +247,7 @@ public class CustomerAppController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Change the authenticated customer's password. Sends an in-app notification on success.
-     */
+    
     @PutMapping(value = "/password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Response> changePassword(@Valid @RequestBody UserRequest request) {
@@ -329,7 +287,7 @@ public class CustomerAppController {
         }
     }
 
-    /** Sends an in-app notification for a customer action. Logs and ignores errors so the main action is not failed. */
+    
     private void notifyCustomerAction(Long userId, String title, String body) {
         try {
             notificationService.saveNotification(userId, "CUSTOMER", title, body);

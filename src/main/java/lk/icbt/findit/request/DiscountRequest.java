@@ -17,7 +17,7 @@ public class DiscountRequest {
     private String discountName;
 
     @NotNull(message = "Discount type is required")
-    private String discountType;   // PERCENTAGE or FIXED_AMOUNT
+    private String discountType;   
 
     @NotNull(message = "Discount value is required")
     @DecimalMin(value = "0", inclusive = true, message = "Discount value must be >= 0")
@@ -29,10 +29,10 @@ public class DiscountRequest {
     @Size(max = 50)
     private String status;
 
-    /** Image URL or path for the discount. */
+    
     @Size(max = 500)
     private String discountImage;
 
-    /** Item IDs to link to this discount. Optional; can be empty. */
+    
     private List<Long> itemIds;
 }

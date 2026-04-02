@@ -16,9 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Item CRUD and Search APIs. Access: SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT.
- */
+
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor

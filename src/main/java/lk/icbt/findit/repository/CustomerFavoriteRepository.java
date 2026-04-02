@@ -12,7 +12,7 @@ public interface CustomerFavoriteRepository extends JpaRepository<CustomerFavori
 
     List<CustomerFavorite> findByCustomer_CustomerIdOrderByIdAsc(Long customerId);
 
-    /** Favorites for a customer and any of the given outlet IDs (for nearest-outlet response). */
+    
     List<CustomerFavorite> findByCustomer_CustomerIdAndOutlet_OutletIdIn(Long customerId, List<Long> outletIds);
 
     Optional<CustomerFavorite> findByIdAndCustomer_CustomerId(Long id, Long customerId);

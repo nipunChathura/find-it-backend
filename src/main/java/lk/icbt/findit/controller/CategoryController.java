@@ -16,9 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Category CRUD APIs. Access: SYSADMIN, ADMIN, MERCHANT (main merchant and sub-merchant).
- */
+
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor

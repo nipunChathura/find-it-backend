@@ -5,9 +5,7 @@ import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * Response for merchant API endpoints.
- */
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

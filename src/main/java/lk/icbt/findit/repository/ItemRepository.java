@@ -30,7 +30,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("status") String status,
             @Param("availability") Boolean availability);
 
-    /** For nearest-outlet search: items matching name, available, active; outlet active with lat/long; optional category and outlet type. */
+    
     @Query("SELECT DISTINCT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o " +
             "WHERE LOWER(i.itemName) LIKE LOWER(CONCAT('%', :itemName, '%')) " +
             "AND i.availability = true AND i.status = 'ACTIVE' " +
@@ -42,7 +42,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             @Param("categoryId") Long categoryId,
             @Param("outletType") OutletType outletType);
 
-    /** For nearest-outlet search when no item name: all available items; outlet active with lat/long; optional category and outlet type. */
+    
     @Query("SELECT DISTINCT i FROM Item i LEFT JOIN FETCH i.category c LEFT JOIN FETCH i.outlet o " +
             "WHERE i.availability = true AND i.status = 'ACTIVE' " +
             "AND o.status = 'ACTIVE' AND o.latitude IS NOT NULL AND o.longitude IS NOT NULL " +
@@ -54,16 +54,16 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     long countByStatusNot(String itemDeletedStatus);
 
-    /** Count items belonging to outlets in the given list (for merchant app dashboard). */
+    
     long countByOutlet_OutletIdIn(List<Long> outletIds);
 
-    /** Count items belonging to outlets in the given list, excluding given status (e.g. DELETED). */
+    
     long countByOutlet_OutletIdInAndStatusNot(List<Long> outletIds, String status);
 
-    /** Count items for one outlet, excluding given status (e.g. DELETED). Used for assigned outlets list. */
+    
     long countByOutlet_OutletIdAndStatusNot(Long outletId, String status);
 
-    /** Item counts per outlet (outletId, count) for given outlet IDs, excluding given status. */
+    
     @Query("SELECT i.outlet.outletId, COUNT(i) FROM Item i WHERE i.outlet.outletId IN :outletIds AND (i.status IS NULL OR i.status <> :excludeStatus) GROUP BY i.outlet.outletId")
     List<Object[]> countByOutletIdInGroupByOutletId(@Param("outletIds") List<Long> outletIds, @Param("excludeStatus") String excludeStatus);
 }

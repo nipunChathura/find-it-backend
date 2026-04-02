@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * District APIs. Get districts by province ID with optional search by name.
- */
+
 @RestController
 @RequestMapping("/api/provinces/{provinceId}/districts")
 @RequiredArgsConstructor

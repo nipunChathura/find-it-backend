@@ -37,13 +37,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
     private final OutletScheduleRepository scheduleRepository;
     private final HolidayRepository holidayRepository;
 
-    /**
-     * Determines if outlet is OPEN or CLOSED using outlet_schedule by schedule type.
-     * Resolution order (outlet_schedule): TEMPORARY → EMERGENCY/DAILY → NORMAL. Holiday → closed.
-     * - NORMAL: day_of_week = today's weekday (recurring weekly).
-     * - EMERGENCY / DAILY: special_date = today (one-off or daily override).
-     * - TEMPORARY: today within start_date and end_date (date range override).
-     */
+    
     @Override
     public OutletStatusResponse getOutletStatus(Long outletId, LocalDateTime checkTime) {
         ensureOutletExists(outletId);
@@ -217,30 +211,23 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
         scheduleRepository.save(schedule);
     }
 
-    /**
-     * Resolves which outlet_schedule row applies for the given date, by schedule type.
-     * Order: TEMPORARY → EMERGENCY/DAILY → (holiday → closed) → NORMAL.
-     * - TEMPORARY: date between start_date and end_date (inclusive).
-     * - EMERGENCY / DAILY: special_date = date (single-day override).
-     * - NORMAL: day_of_week = date's weekday (weekly recurring).
-     * Only ACTIVE, non-DELETED schedules are considered (repository filters).
-     */
+    
     private OutletSchedule findApplicableScheduleByType(Long outletId, LocalDate date) {
-        // 1) TEMPORARY: date range (start_date .. end_date)
+        
         List<OutletSchedule> temporary = scheduleRepository.findTemporaryByOutletAndDate(outletId, date);
         if (!temporary.isEmpty()) {
             return selectByPriority(temporary);
         }
-        // 2) EMERGENCY or DAILY: special_date = today
+        
         List<OutletSchedule> specialDate = scheduleRepository.findSpecialDateByOutletAndDate(outletId, date);
         if (!specialDate.isEmpty()) {
             return selectByPriority(specialDate);
         }
-        // 3) Holiday: treat as closed (no schedule)
+        
         if (holidayRepository.findByHolidayDate(date).isPresent()) {
             return null;
         }
-        // 4) NORMAL: day_of_week = today's weekday
+        
         String dayOfWeek = date.getDayOfWeek().name();
         List<OutletSchedule> normal = scheduleRepository.findNormalByOutletAndDayOfWeek(outletId, dayOfWeek);
         if (!normal.isEmpty()) {

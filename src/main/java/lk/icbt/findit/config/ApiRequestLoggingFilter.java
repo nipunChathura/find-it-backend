@@ -12,9 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Logs all API requests: method, URI, query string, response status, and duration.
- */
+
 @Component
 public class ApiRequestLoggingFilter extends OncePerRequestFilter {
 

@@ -5,9 +5,7 @@ import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
 import lombok.Data;
 
-/**
- * Request for updating an outlet. Does not change merchant/sub-merchant or status (use status API for that).
- */
+
 @Data
 public class OutletUpdateRequest {
 
@@ -60,6 +58,6 @@ public class OutletUpdateRequest {
     @Size(max = 500)
     private String remarks;
 
-    /** Optional outlet rating (e.g. 0.0 to 5.0). */
+    
     private Double rating;
 }

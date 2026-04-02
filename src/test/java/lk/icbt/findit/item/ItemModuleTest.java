@@ -32,10 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * JUnit tests for Item module APIs.
- * Covers: Create item, Get by outlet, Get by id, Search, Update, Delete.
- */
+
 @Tag("unit")
 @WebMvcTest(ItemController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -61,7 +58,7 @@ class ItemModuleTest {
     @MockitoBean
     private ApiRequestLoggingFilter apiRequestLoggingFilter;
 
-    // ---------- UT05: Add new item ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT05 - Add new item")
@@ -90,7 +87,7 @@ class ItemModuleTest {
                 .andExpect(jsonPath("$.itemName").value("Test Item"));
     }
 
-    // ---------- UT06: Get items by outlet id ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT06 - Get items by outlet id")
@@ -106,7 +103,7 @@ class ItemModuleTest {
                 .andExpect(jsonPath("$[0].itemName").value("Item One"));
     }
 
-    // ---------- UT07: Get item by id ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT07 - Get item by id")
@@ -122,7 +119,7 @@ class ItemModuleTest {
                 .andExpect(jsonPath("$.itemName").value("Single Item"));
     }
 
-    // ---------- UT08: Search items ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT08 - Search items with filters")
@@ -143,7 +140,7 @@ class ItemModuleTest {
                 .andExpect(jsonPath("$[0].itemName").value("Searched Item"));
     }
 
-    // ---------- UT09: Update item ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT09 - Update existing item")
@@ -166,7 +163,7 @@ class ItemModuleTest {
                 .andExpect(jsonPath("$.itemName").value("Updated Item"));
     }
 
-    // ---------- UT10: Delete item ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT10 - Delete item")

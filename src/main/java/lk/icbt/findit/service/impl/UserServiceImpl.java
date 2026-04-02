@@ -871,7 +871,7 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    /** Formats current date-time for inclusion in customer action notification body (e.g. 05-Mar-2025 14:30:45). */
+    
     private static String formatNotificationDateTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss"));
     }

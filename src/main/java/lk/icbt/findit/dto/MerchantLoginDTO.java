@@ -20,8 +20,8 @@ public class MerchantLoginDTO extends Response {
     private Long merchantId;
     private Long subMerchantId;
     private String profileImageUrl;
-    /** Full main merchant details (when role = MERCHANT, or parent when role = SUBMERCHANT). */
+    
     private MainMerchantInfo mainMerchantInfo;
-    /** Sub-merchant details (when role = SUBMERCHANT only). */
+    
     private SubMerchantInfo subMerchantInfo;
 }

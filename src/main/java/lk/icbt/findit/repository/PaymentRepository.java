@@ -23,9 +23,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "(:status IS NULL OR :status = '' OR p.status = :status) ORDER BY p.paymentId DESC")
     List<Payment> findAllWithFilters(@Param("outletId") Long outletId, @Param("status") String status);
 
-    /** Pending payments for the given outlet IDs (for merchant app dashboard). */
+    
     List<Payment> findByOutlet_OutletIdInAndStatus(List<Long> outletIds, String status);
 
-    /** All payments for the given outlet IDs (for merchant app payment list). */
+    
     List<Payment> findByOutlet_OutletIdInOrderByPaymentIdDesc(List<Long> outletIds);
 }

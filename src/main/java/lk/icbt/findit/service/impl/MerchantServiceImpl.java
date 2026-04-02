@@ -62,7 +62,7 @@ public class MerchantServiceImpl implements MerchantService {
             try {
                 merchantTypeParam = MerchantType.valueOf(merchantTypeStr.trim().toUpperCase());
             } catch (IllegalArgumentException ignored) {
-                // invalid enum, leave filter off
+                
             }
         }
 
@@ -245,9 +245,7 @@ public class MerchantServiceImpl implements MerchantService {
         return mapToDto(saved, "Sub-merchant onboarding submitted successfully. Pending approval.");
     }
 
-    /**
-     * Creates and saves a user with role SUBMERCHANT for sub-merchant login after approval.
-     */
+    
     private void saveSubMerchantUser(Long parentMerchantId, Long subMerchantId, String username, String email, String plainPassword, Date now) {
         User user = new User();
         user.setUsername(username);
@@ -333,7 +331,7 @@ public class MerchantServiceImpl implements MerchantService {
         merchant.setModifiedDatetime(new Date());
         Merchant saved = merchantRepository.save(merchant);
 
-        // Update linked user(s) to ACTIVE so merchant can log in (exclude DELETED)
+        
         List<User> users = userRepository.findByMerchantIdAndRoleAndStatusNot(saved.getMerchantId(), Role.MERCHANT, Constants.USER_DELETED_STATUS);
         for (User user : users) {
             user.setStatus(Constants.USER_ACTIVE_STATUS);

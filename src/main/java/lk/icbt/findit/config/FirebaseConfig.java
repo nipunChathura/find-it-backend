@@ -13,10 +13,7 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Initializes Firebase App for FCM (Firebase Cloud Messaging) using service account credentials.
- * Uses service account JSON from classpath (src/main/resources). Configure via firebase.service-account-resource.
- */
+
 @Configuration
 @Slf4j
 public class FirebaseConfig {

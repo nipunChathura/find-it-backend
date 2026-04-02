@@ -13,9 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Notification API: send (and optionally push via FCM), list unread, mark as read, list by type.
- */
+
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor

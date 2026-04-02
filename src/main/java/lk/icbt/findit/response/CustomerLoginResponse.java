@@ -6,9 +6,7 @@ import lk.icbt.findit.entity.Role;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * Response for customer login. Includes JWT token, user context and customer details.
- */
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -21,7 +19,7 @@ public class CustomerLoginResponse extends Response {
     private Role role;
     private Long customerId;
     private String profileImageUrl;
-    /** Customer profile details (from customers table). */
+    
     private String firstName;
     private String lastName;
     private String phoneNumber;

@@ -494,9 +494,9 @@ public class OutletServiceImpl implements OutletService {
         response.setResponseCode(ResponseCodes.SUCCESS_CODE);
         response.setResponseMessage("Success");
         response.setOutlet(mapToListItem(outlet));
-//        response.setItems(itemService.getByOutletId(outletId));
-//        response.setDiscounts(discountService.list(null, null, outletId));
-//        response.setPayments(paymentService.list(outletId, null));
+
+
+
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getOutletDetails", "outletId", outletId);
         return response;
     }

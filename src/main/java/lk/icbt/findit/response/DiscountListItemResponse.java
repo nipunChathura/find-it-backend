@@ -20,6 +20,6 @@ public class DiscountListItemResponse {
     private Long outletId;
     private String outletName;
     private List<Long> itemIds;
-    /** Item id and name for each linked item. */
+    
     private List<ItemIdNameResponse> items;
 }

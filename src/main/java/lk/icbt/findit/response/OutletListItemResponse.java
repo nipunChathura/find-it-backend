@@ -40,6 +40,6 @@ public class OutletListItemResponse {
     private String status;
     private java.util.Date subscriptionValidUntil;
     private Double rating;
-    /** Number of items for this outlet (excluding DELETED). */
+    
     private Long itemCount;
 }

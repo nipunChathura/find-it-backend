@@ -56,19 +56,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
-        // Apply outlet subscription and status based on payment status and dates
+        
         applyOutletSubscriptionAndStatus(outlet, saved, paymentStatus, now);
 
         return toResponse(paymentRepository.findById(saved.getPaymentId()).orElse(saved), "Payment created successfully.");
     }
 
-    /**
-     * - If payment status is ACTIVE/APPROVED: extend outlet subscriptionValidUntil by 1 month.
-     * - If payment status is PENDING: do not extend date.
-     * - If subscriptionValidUntil >= today: set outlet status to ACTIVE.
-     * - If subscriptionValidUntil < payment (paid) date: set outlet status to PENDING_SUBSCRIPTION.
-     * - Otherwise (e.g. subscription expired): set EXPIRED_SUBSCRIPTION.
-     */
+    
     private void applyOutletSubscriptionAndStatus(Outlet outlet, Payment payment, String paymentStatus, Date now) {
         boolean isApproved = Constants.PAYMENT_APPROVED_STATUS.equalsIgnoreCase(paymentStatus)
                 || "ACTIVE".equalsIgnoreCase(paymentStatus);
@@ -78,7 +72,7 @@ public class PaymentServiceImpl implements PaymentService {
             Date baseDate = (currentSubEnd != null && currentSubEnd.after(now)) ? currentSubEnd : now;
             outlet.setSubscriptionValidUntil(addMonths(baseDate, 1));
         }
-        // If PENDING: do not change subscriptionValidUntil
+        
 
         Date paidDate = payment.getPaymentDate() != null ? payment.getPaymentDate() : now;
         Date todayStart = startOfDay(now);

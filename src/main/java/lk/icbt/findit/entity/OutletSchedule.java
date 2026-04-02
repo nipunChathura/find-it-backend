@@ -7,10 +7,7 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-/**
- * Opening hours / schedule for an outlet.
- * Supports NORMAL (weekly), EMERGENCY/DAILY (single date), TEMPORARY (date range).
- */
+
 @Entity
 @Table(name = "outlet_schedule", indexes = {
     @Index(name = "idx_outlet_schedule_outlet_id", columnList = "outlet_id"),
@@ -35,27 +32,27 @@ public class OutletSchedule extends AbstractEntity {
     @Column(name = "schedule_type", nullable = false, length = 20)
     private ScheduleType scheduleType;
 
-    /** For NORMAL: MONDAY, TUESDAY, ... SUNDAY */
+    
     @Column(name = "day_of_week", length = 15)
     private String dayOfWeek;
 
-    /** For EMERGENCY / DAILY: exact date */
+    
     @Column(name = "special_date")
     private LocalDate specialDate;
 
-    /** For TEMPORARY: range start */
+    
     @Column(name = "start_date")
     private LocalDate startDate;
 
-    /** For TEMPORARY: range end */
+    
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    /** Open time HH:mm */
+    
     @Column(name = "open_time", length = 5)
     private String openTime;
 
-    /** Close time HH:mm */
+    
     @Column(name = "close_time", length = 5)
     private String closeTime;
 
@@ -71,16 +68,16 @@ public class OutletSchedule extends AbstractEntity {
     @Column(name = "is_active", length = 1)
     private String isActive = "Y";
 
-    /** ACTIVE or DELETED; soft delete uses DELETED instead of removing the row */
+    
     @Column(name = "status", length = 20)
     private String status = "ACTIVE";
 
-    /** Parses open_time to LocalTime; returns null if not set or invalid. */
+    
     public LocalTime getOpenTimeAsLocalTime() {
         return parseTime(openTime);
     }
 
-    /** Parses close_time to LocalTime; returns null if not set or invalid. */
+    
     public LocalTime getCloseTimeAsLocalTime() {
         return parseTime(closeTime);
     }

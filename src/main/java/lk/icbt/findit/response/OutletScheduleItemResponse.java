@@ -17,7 +17,7 @@ public class OutletScheduleItemResponse {
     private Long id;
     private ScheduleType scheduleType;
     private String dayOfWeek;
-    private String specialDate;   // ISO date string
+    private String specialDate;   
     private String startDate;
     private String endDate;
     private String openTime;
@@ -26,5 +26,5 @@ public class OutletScheduleItemResponse {
     private String reason;
     private Integer priority;
     private Boolean active;
-    private String status;   // ACTIVE or DELETED
+    private String status;   
 }

@@ -4,7 +4,7 @@ public class ResponseCodes {
     public static final String SUCCESS_CODE = "00";
     public static final String FAILED_CODE = "01";
 
-    /** Request body validation failed (e.g. @Valid). */
+    
     public static final String VALIDATION_ERROR_CODE = "5000";
     public static final String MISSING_PARAMETER_CODE = "5100";
 
@@ -37,7 +37,7 @@ public class ResponseCodes {
     public static final String NOT_A_MERCHANT_USER_CODE = "5506";
     public static final String NOT_A_SUB_MERCHANT_USER_CODE = "5507";
     public static final String NOT_MERCHANT_OR_SUB_MERCHANT_CODE = "5508";
-    /** Merchant or sub-merchant status is not active; login not allowed. */
+    
     public static final String MERCHANT_STATUS_NOT_ACTIVE_CODE = "5509";
     public static final String CATEGORY_NOT_FOUND_CODE = "5601";
     public static final String OUTLET_NOT_FOUND_CODE = "5701";

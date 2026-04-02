@@ -7,10 +7,7 @@ import lombok.Data;
 
 import java.util.Date;
 
-/**
- * Full outlet details for GET /api/outlets/assigned. Includes current open/closed status
- * and optional subMerchantInfo when the outlet is assigned to a sub-merchant.
- */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutletAssignedItemResponse {
@@ -47,12 +44,12 @@ public class OutletAssignedItemResponse {
     private Date subscriptionValidUntil;
     private Double rating;
 
-    /** OPEN or CLOSED based on current time and outlet schedule. */
+    
     private String currentStatus;
 
-    /** Number of items in this outlet (excluding DELETED). */
+    
     private Long itemCount;
 
-    /** Present when outlet is assigned to a sub-merchant (subMerchantId != null). */
+    
     private SubMerchantInfo subMerchantInfo;
 }

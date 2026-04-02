@@ -10,10 +10,10 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserApprovalDTO extends Response {
 
-    /* Request field (controller → service) */
+    
     private Long userId;
 
-    /* Response fields (service → controller) */
+    
     private String username;
     private String userStatus;
 }

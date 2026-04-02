@@ -406,7 +406,7 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         return result;
     }
 
-    /** Builds SubMerchantResponse list with outletCount, outletNames, and profileImage (from users table) set. */
+    
     private List<SubMerchantResponse> buildSubMerchantListWithOutlets(List<SubMerchant> list) {
         if (list == null || list.isEmpty()) {
             return Collections.emptyList();
@@ -426,7 +426,7 @@ public class SubMerchantServiceImpl implements SubMerchantService {
         }).collect(Collectors.toList());
     }
 
-    /** Profile image from users table (first SUBMERCHANT user per sub-merchant, status not DELETED). */
+    
     private Map<Long, String> getSubMerchantProfileImages(List<Long> subMerchantIds) {
         if (subMerchantIds == null || subMerchantIds.isEmpty()) {
             return new HashMap<>();

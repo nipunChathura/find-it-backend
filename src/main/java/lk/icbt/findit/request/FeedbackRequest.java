@@ -11,6 +11,6 @@ public class FeedbackRequest {
 
     private String feedbackText;
 
-    /** Rating e.g. 1.0 to 5.0 */
+    
     private Double rating;
 }

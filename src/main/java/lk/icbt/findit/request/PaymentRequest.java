@@ -27,7 +27,7 @@ public class PaymentRequest {
     @Size(max = 20)
     private String paidMonth;
 
-//    @Size(max = 500)
+
     private String receiptImage;
 
     @Size(max = 50)

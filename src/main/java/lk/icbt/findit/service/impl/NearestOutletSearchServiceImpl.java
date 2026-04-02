@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class NearestOutletSearchServiceImpl implements NearestOutletSearchService {
 
     private static final double EARTH_RADIUS_KM = 6371.0;
-    /** Default maximum number of outlets returned (nearest first). */
+    
     private static final int DEFAULT_MAX_RESULTS = 20;
 
     private final ItemRepository itemRepository;
@@ -111,7 +111,7 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
                 continue;
             }
 
-            // Open/closed from outlet_schedule by schedule type: NORMAL, EMERGENCY, TEMPORARY, DAILY
+            
             OutletStatusResponse statusResponse = outletScheduleService.getOutletStatus(outletId, now);
             if (!OutletStatusResponse.STATUS_OPEN.equals(statusResponse.getStatus())) {
                 continue;
@@ -142,7 +142,7 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
             results.add(resultItem);
         }
 
-        // Join with customer_favorite: set is_favorite, customer_favorite_id, nickname per outlet
+        
         Map<Long, CustomerFavorite> outletIdToFavorite = new HashMap<>();
         if (customerId != null && !results.isEmpty()) {
             List<Long> outletIds = results.stream().map(NearestOutletResultItem::getOutletId).distinct().collect(Collectors.toList());

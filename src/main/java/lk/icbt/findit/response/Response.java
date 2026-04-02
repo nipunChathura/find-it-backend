@@ -11,6 +11,6 @@ public class Response {
     private String status;
     private String responseCode;
     private String responseMessage;
-    /** Present for all failure responses; lists error details (field-level for validation, or a single "error" entry). */
+    
     private List<FieldErrorItem> fieldErrors;
 }

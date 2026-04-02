@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** Response for GET /outlets/{id}/status: current open/closed and today's schedule. */
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,17 +21,17 @@ public class OutletStatusResponse {
     public static final String STATUS_CLOSED = "CLOSED";
 
     private Long outletId;
-    private String status;           // OPEN or CLOSED
+    private String status;           
 
-    /** Which schedule type was used: NORMAL, EMERGENCY, TEMPORARY, DAILY. Null if no schedule (e.g. holiday). */
+    
     private String scheduleType;
 
-    /** Y = closed, N = open. When Y, openTime/closeTime give the opening time range. */
+    
     @JsonProperty("is_closed")
-    private String isClosed;         // "Y" or "N"
+    private String isClosed;         
 
-    private String openTime;         // HH:mm opening time (applicable schedule range)
-    private String closeTime;        // HH:mm closing time (applicable schedule range)
-    private String reason;           // e.g. closure reason
+    private String openTime;         
+    private String closeTime;        
+    private String reason;           
     private List<OutletScheduleItemResponse> todaySchedule;
 }

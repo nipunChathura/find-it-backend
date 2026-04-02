@@ -26,6 +26,6 @@ public class MerchantWithOutletsResponse extends Response {
     private String merchantStatus;
     private String inactiveReason;
 
-    /** All outlets assigned to this merchant (direct outlets; subMerchant is null). */
+    
     private List<OutletListItemResponse> outlets;
 }

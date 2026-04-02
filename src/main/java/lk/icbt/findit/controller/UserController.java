@@ -97,7 +97,7 @@ public class UserController {
             response.setRole(reg.getRole());
             response.setProfileImageUrl(reg.getProfileImageUrl());
         } else if (result instanceof ForgotPasswordApprovalDTO) {
-            // Only status, responseCode, responseMessage set above
+            
         }
     }
 }

@@ -14,6 +14,6 @@ public class CustomerFavoriteResponse extends Response {
     private Long outletId;
     private String nickname;
 
-    /** Outlet details (name, status, address, contact, rating, etc.) */
+    
     private OutletDetailItem outlet;
 }

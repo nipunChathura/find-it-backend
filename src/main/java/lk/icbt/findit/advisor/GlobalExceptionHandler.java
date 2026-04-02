@@ -28,10 +28,7 @@ public class GlobalExceptionHandler {
 
     private static final List<String> SENSITIVE_FIELDS = List.of("password", "currentPassword", "newPassword", "token");
 
-    /**
-     * Builds a standard API failure response with status, responseCode, responseMessage and fieldErrors.
-     * All API failures use this format so clients always receive the same structure and the failure reason in responseMessage.
-     */
+    
     private static Response buildFailureResponse(String responseCode, String responseMessage, List<FieldErrorItem> fieldErrors) {
         Response response = new Response();
         response.setStatus(ResponseStatus.FAILURE.getStatus());
