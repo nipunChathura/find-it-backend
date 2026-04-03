@@ -37,9 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Performance tests for Login and Auth APIs. Records to shared Performance Summary.
- */
+
 @Tag("performance")
 @WebMvcTest(controllers = {UserController.class, AuthController.class})
 @AutoConfigureMockMvc(addFilters = false)

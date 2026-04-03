@@ -84,6 +84,7 @@ public class OutletServiceImpl implements OutletService {
                     .name(o.getOutletName())
                     .status(o.getStatus())
                     .currentStatus(currentStatus)
+                    .subscriptionStatus(subscriptionStatusOf(o))
                     .rating(o.getRating())
                     .build();
         }).collect(Collectors.toList());
@@ -154,6 +155,7 @@ public class OutletServiceImpl implements OutletService {
         r.setRemarks(o.getRemarks());
         r.setStatus(o.getStatus());
         r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setSubscriptionStatus(subscriptionStatusOf(o));
         r.setRating(o.getRating());
         String currentStatus = OutletStatusResponse.STATUS_CLOSED;
         try {
@@ -224,6 +226,7 @@ public class OutletServiceImpl implements OutletService {
         outlet.setModifiedDatetime(now);
         outlet.setVersion(1);
         outlet.setSubscriptionValidUntil(addMonths(now, Constants.OUTLET_FREE_TRIAL_MONTHS));
+        outlet.setSubscriptionStatus(SubscriptionStatus.TRIAL);
 
         Outlet saved = outletRepository.save(outlet);
         if (Constants.OUTLET_PENDING_STATUS.equals(outletStatus)) {
@@ -281,6 +284,7 @@ public class OutletServiceImpl implements OutletService {
         }
 
         outlet.setStatus(Constants.OUTLET_ACTIVE_STATUS);
+        outlet.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
         if (saved.getSubMerchant() != null && saved.getMerchant() != null) {
@@ -326,6 +330,7 @@ public class OutletServiceImpl implements OutletService {
         }
 
         outlet.setStatus(Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
+        outlet.setSubscriptionStatus(SubscriptionStatus.PENDING);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
         if (user.getRole() == Role.SUBMERCHANT && saved.getSubMerchant() != null && saved.getMerchant() != null) {
@@ -351,10 +356,13 @@ public class OutletServiceImpl implements OutletService {
 
         outlet.setStatus(Constants.OUTLET_ACTIVE_STATUS);
         Date now = new Date();
-        outlet.setSubscriptionValidUntil(addMonths(now, 12));
+        Date currentEnd = outlet.getSubscriptionValidUntil();
+        Date baseDate = (currentEnd != null && currentEnd.after(now)) ? currentEnd : now;
+        outlet.setSubscriptionValidUntil(addMonths(baseDate, Constants.OUTLET_SUBSCRIPTION_VERIFY_EXTEND_MONTHS));
+        outlet.setSubscriptionStatus(SubscriptionStatus.ACTIVE);
         outlet.setModifiedDatetime(now);
         Outlet saved = outletRepository.save(outlet);
-        return mapToDto(saved, "Payment verified. Outlet is active. Subscription extended by 12 months.");
+        return mapToDto(saved, "Payment verified. Outlet is active. Subscription extended by " + Constants.OUTLET_SUBSCRIPTION_VERIFY_EXTEND_MONTHS + " month(s).");
     }
 
     @Override
@@ -418,6 +426,7 @@ public class OutletServiceImpl implements OutletService {
             throw new InvalidRequestException(ResponseCodes.OUTLET_NOT_PENDING_CODE, "Invalid outlet status. Allowed: ACTIVE, PENDING, REJECTED, PENDING_SUBSCRIPTION, EXPIRED_SUBSCRIPTION");
         }
         outlet.setStatus(s);
+        applySubscriptionStatusForOutletStatus(outlet, s);
         outlet.setModifiedDatetime(new Date());
         Outlet saved = outletRepository.save(outlet);
         return mapToDto(saved, "Outlet status updated successfully.");
@@ -475,6 +484,7 @@ public class OutletServiceImpl implements OutletService {
         r.setRemarks(o.getRemarks());
         r.setStatus(o.getStatus());
         r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setSubscriptionStatus(subscriptionStatusOf(o));
         r.setRating(o.getRating());
         return r;
     }
@@ -494,9 +504,9 @@ public class OutletServiceImpl implements OutletService {
         response.setResponseCode(ResponseCodes.SUCCESS_CODE);
         response.setResponseMessage("Success");
         response.setOutlet(mapToListItem(outlet));
-//        response.setItems(itemService.getByOutletId(outletId));
-//        response.setDiscounts(discountService.list(null, null, outletId));
-//        response.setPayments(paymentService.list(outletId, null));
+
+
+
         ServiceLoggingHelper.logEnd(log, SERVICE_NAME, "getOutletDetails", "outletId", outletId);
         return response;
     }
@@ -714,7 +724,27 @@ public class OutletServiceImpl implements OutletService {
         dto.setRemarks(outlet.getRemarks());
         dto.setOutletStatus(outlet.getStatus());
         dto.setSubscriptionValidUntil(outlet.getSubscriptionValidUntil());
+        dto.setSubscriptionStatus(subscriptionStatusOf(outlet));
         dto.setRating(outlet.getRating());
         return dto;
+    }
+
+    private static SubscriptionStatus subscriptionStatusOf(Outlet o) {
+        return o.getSubscriptionStatus();
+    }
+
+    private static void applySubscriptionStatusForOutletStatus(Outlet outlet, String status) {
+        if (status == null) {
+            return;
+        }
+        if (Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS.equals(status)) {
+            outlet.setSubscriptionStatus(SubscriptionStatus.EXPIRED);
+        } else if (Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS.equals(status)) {
+            outlet.setSubscriptionStatus(SubscriptionStatus.PENDING);
+        } else if (Constants.OUTLET_ACTIVE_STATUS.equals(status)) {
+            outlet.setSubscriptionStatus(SubscriptionStatus.ACTIVE);
+        } else {
+            outlet.setSubscriptionStatus(null);
+        }
     }
 }

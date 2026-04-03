@@ -21,26 +21,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByMerchantIdAndRole(Long merchantId, Role role);
 
-    /** Same as findByMerchantIdAndRole but excludes users with the given status (e.g. DELETED). */
+    
     List<User> findByMerchantIdAndRoleAndStatusNot(Long merchantId, Role role, String status);
 
     List<User> findByMerchantIdInAndRole(List<Long> merchantIds, Role role);
 
-    /** For filtering merchants by login username (username stored in users table). */
+    
     List<User> findByRoleAndMerchantIdNotNullAndUsernameContainingIgnoreCase(Role role, String username);
 
-    /** For filtering sub-merchants by login username. */
+    
     List<User> findByRoleAndSubMerchantIdNotNullAndUsernameContainingIgnoreCase(Role role, String username);
 
     List<User> findBySubMerchantIdAndRole(Long subMerchantId, Role role);
 
-    /** Same as findBySubMerchantIdAndRole but excludes users with the given status (e.g. DELETED). */
+    
     List<User> findBySubMerchantIdAndRoleAndStatusNot(Long subMerchantId, Role role, String status);
 
-    /** Users for the given sub-merchant IDs with role SUBMERCHANT, excluding given status (for profile image lookup). */
+    
     List<User> findBySubMerchantIdInAndRoleAndStatusNot(List<Long> subMerchantIds, Role role, String status);
 
-    /** Find all users with any of the given roles (e.g. SYSADMIN, ADMIN for admin-type users). */
+    
     List<User> findByRoleIn(List<Role> roles);
 
     boolean existsByUsername(String username);
@@ -55,6 +55,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByStatusNotInAndRoleIn(Collection<String> status, Collection<Role> role);
 
-    /** Count users by role, excluding given status (e.g. DELETED). */
+    
     long countByRoleAndStatusNot(Role role, String status);
 }

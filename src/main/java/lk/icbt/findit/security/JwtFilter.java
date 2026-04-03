@@ -15,9 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Filter that validates JWT from the Authorization header and sets the security context.
- */
+
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -51,7 +49,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception ignored) {
-            // Invalid or expired token - leave context unauthenticated
+            
         }
         filterChain.doFilter(request, response);
     }

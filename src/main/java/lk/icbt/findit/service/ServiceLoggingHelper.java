@@ -2,15 +2,13 @@ package lk.icbt.findit.service;
 
 import org.slf4j.Logger;
 
-/**
- * Helper for consistent service-level logging: start, end, getting data, validation errors.
- */
+
 public final class ServiceLoggingHelper {
 
     private ServiceLoggingHelper() {
     }
 
-    /** Log when a service method starts. */
+    
     public static void logStart(Logger log, String serviceName, String methodName, Object... keyValuePairs) {
         if (log.isInfoEnabled()) {
             String params = formatKeyValues(keyValuePairs);
@@ -18,7 +16,7 @@ public final class ServiceLoggingHelper {
         }
     }
 
-    /** Log when a service method completes successfully. */
+    
     public static void logEnd(Logger log, String serviceName, String methodName, Object... keyValuePairs) {
         if (log.isInfoEnabled()) {
             String params = formatKeyValues(keyValuePairs);
@@ -26,7 +24,7 @@ public final class ServiceLoggingHelper {
         }
     }
 
-    /** Log when fetching/loading data (e.g. from repository). */
+    
     public static void logGettingData(Logger log, String dataDescription, Object... keyValuePairs) {
         if (log.isDebugEnabled()) {
             String params = formatKeyValues(keyValuePairs);
@@ -34,7 +32,7 @@ public final class ServiceLoggingHelper {
         }
     }
 
-    /** Log when a validation or business rule check fails (before throwing InvalidRequestException). */
+    
     public static void logValidationError(Logger log, String code, String message) {
         log.warn("[Validation error] code={} message={}", code, message);
     }

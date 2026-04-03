@@ -12,8 +12,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MonthlyIncomeItem {
-    /** Month label e.g. "2025-09". */
+    
     private String month;
-    /** Total income for the month. */
+    
     private BigDecimal income;
 }

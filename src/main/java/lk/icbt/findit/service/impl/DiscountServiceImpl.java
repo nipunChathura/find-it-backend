@@ -192,7 +192,7 @@ public class DiscountServiceImpl implements DiscountService {
 
     private DiscountResponse toResponse(Discount d, List<Long> itemIds, String message) {
         DiscountResponse r = new DiscountResponse();
-        r.setStatus(ResponseStatus.SUCCESS.getStatus());  // API result
+        r.setStatus(ResponseStatus.SUCCESS.getStatus());  
         r.setResponseCode(ResponseCodes.SUCCESS_CODE);
         r.setResponseMessage(message);
         r.setDiscountId(d.getDiscountId());

@@ -12,10 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Image upload and show: upload saves under project images/{type}/ with unique filename;
- * show returns the image file by type and fileName.
- */
+
 @RestController
 @RequestMapping("/api/images")
 @RequiredArgsConstructor

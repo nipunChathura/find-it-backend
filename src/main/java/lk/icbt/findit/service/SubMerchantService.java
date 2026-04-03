@@ -17,28 +17,22 @@ public interface SubMerchantService {
 
     SubMerchantApprovalDTO approveSubMerchantForMerchant(String username, Long subMerchantId);
 
-    /**
-     * Reject a pending sub-merchant (set status to INACTIVE). Sends notification to merchant and sub-merchant users.
-     */
+    
     SubMerchantApprovalDTO rejectSubMerchant(Long subMerchantId, Long merchantId, String reason);
 
-    /** Reject sub-merchant by authenticated merchant (parent). */
+    
     SubMerchantApprovalDTO rejectSubMerchantForMerchant(String username, Long subMerchantId, String reason);
 
     SubMerchantApprovalDTO updateSubMerchantStatus(Long subMerchantId, Long merchantId, String newStatus, String inactiveReason);
 
     SubMerchantApprovalDTO updateSubMerchantStatusForMerchant(String username, Long subMerchantId, String newStatus, String inactiveReason);
 
-    /**
-     * Get sub-merchant by ID with all assigned outlets.
-     */
+    
     SubMerchantWithOutletsResponse getSubMerchantWithOutlets(Long subMerchantId);
 
-    /** List sub-merchants for the authenticated merchant (MERCHANT role only). Optional name/email search. */
+    
     List<SubMerchantResponse> listByMerchantUsername(String username, String nameSearch);
 
-    /**
-     * List sub-merchants by merchant ID. SYSADMIN/ADMIN can pass any merchantId; MERCHANT can only pass their own.
-     */
+    
     List<SubMerchantResponse> listByMerchantId(Long merchantId, String username);
 }

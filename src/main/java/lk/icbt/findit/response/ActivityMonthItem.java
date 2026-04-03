@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ActivityMonthItem {
-    /** Month label e.g. "2025-09" or "Sep 2025". */
+    
     private String month;
     private Long users;
     private Long merchants;

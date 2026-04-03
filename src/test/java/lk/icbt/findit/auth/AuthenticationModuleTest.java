@@ -34,10 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * JUnit tests for Authentication module APIs.
- * Covers: User login, User registration, Auth password change/forgot, Merchant login/forgot password.
- */
+
 @Tag("unit")
 @WebMvcTest(controllers = {UserController.class, AuthController.class})
 @AutoConfigureMockMvc(addFilters = false)
@@ -63,7 +60,7 @@ class AuthenticationModuleTest {
     @MockitoBean
     private ApiRequestLoggingFilter apiRequestLoggingFilter;
 
-    // ---------- UT01: User login with valid credentials ----------
+    
     @Test
     @DisplayName("UT01 - User login with valid credentials")
     void userLoginWithValidCredentials_returnsSuccess() throws Exception {
@@ -89,7 +86,7 @@ class AuthenticationModuleTest {
                 .andExpect(jsonPath("$.username").value("testuser"));
     }
 
-    // ---------- UT02: User registration ----------
+    
     @Test
     @DisplayName("UT02 - User registration with valid data")
     void userRegistrationWithValidData_returnsCreated() throws Exception {
@@ -113,7 +110,7 @@ class AuthenticationModuleTest {
                 .andExpect(jsonPath("$.username").value("newuser"));
     }
 
-    // ---------- UT03: Auth password change (authenticated) ----------
+    
     @Test
     @WithMockUser(username = "testuser")
     @DisplayName("UT03 - Change password when authenticated")
@@ -136,7 +133,7 @@ class AuthenticationModuleTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
     }
 
-    // ---------- UT04: Auth forgot password ----------
+    
     @Test
     @DisplayName("UT04 - Forgot password request")
     void forgotPassword_returnsOk() throws Exception {

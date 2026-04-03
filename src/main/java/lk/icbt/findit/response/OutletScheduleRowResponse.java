@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Single schedule row for grouped response (matches spec: dayOfWeek, openTime, closeTime, isClosed, reason, etc.). */
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,7 +23,7 @@ public class OutletScheduleRowResponse {
     private String openTime;
     private String closeTime;
     @JsonProperty("isClosed")
-    private String isClosed;   // "Y" or "N"
+    private String isClosed;   
     private String reason;
     private Integer priority;
 }

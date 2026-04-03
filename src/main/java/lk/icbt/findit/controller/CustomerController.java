@@ -24,9 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Customer APIs. Onboarding is public. CRUD: SYSADMIN, ADMIN only.
- */
+
 @RestController
 @RequestMapping("/api/customers")
 @RequiredArgsConstructor
@@ -70,7 +68,7 @@ public class CustomerController {
         return ResponseEntity.ok(result);
     }
 
-    /** Get search history list for the given customer (by customerId). Newest first. SYSADMIN, ADMIN only. */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN')")
     @GetMapping(value = "/{customerId}/search-history", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody

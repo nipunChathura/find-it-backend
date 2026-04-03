@@ -14,21 +14,21 @@ public interface OutletScheduleRepository extends JpaRepository<OutletSchedule, 
 
     List<OutletSchedule> findByOutlet_OutletIdAndIsActiveOrderByPriorityDesc(Long outletId, String isActive);
 
-    /** TEMPORARY: active schedules whose date range contains the given date */
+    
     @Query("SELECT s FROM OutletSchedule s WHERE s.outlet.outletId = :outletId AND s.isActive = 'Y' AND (s.status IS NULL OR s.status = 'ACTIVE') " +
            "AND s.scheduleType = 'TEMPORARY' AND s.startDate <= :date AND s.endDate >= :date")
     List<OutletSchedule> findTemporaryByOutletAndDate(
             @Param("outletId") Long outletId,
             @Param("date") LocalDate date);
 
-    /** EMERGENCY or DAILY: exact special_date match */
+    
     @Query("SELECT s FROM OutletSchedule s WHERE s.outlet.outletId = :outletId AND s.isActive = 'Y' AND (s.status IS NULL OR s.status = 'ACTIVE') " +
            "AND s.scheduleType IN ('EMERGENCY', 'DAILY') AND s.specialDate = :date")
     List<OutletSchedule> findSpecialDateByOutletAndDate(
             @Param("outletId") Long outletId,
             @Param("date") LocalDate date);
 
-    /** NORMAL: day of week (e.g. MONDAY) */
+    
     @Query("SELECT s FROM OutletSchedule s WHERE s.outlet.outletId = :outletId AND s.isActive = 'Y' AND (s.status IS NULL OR s.status = 'ACTIVE') " +
            "AND s.scheduleType = 'NORMAL' AND s.dayOfWeek = :dayOfWeek")
     List<OutletSchedule> findNormalByOutletAndDayOfWeek(
@@ -37,7 +37,7 @@ public interface OutletScheduleRepository extends JpaRepository<OutletSchedule, 
 
     List<OutletSchedule> findByOutlet_OutletIdOrderByPriorityDesc(Long outletId);
 
-    /** Active schedules only (excludes status = DELETED; treats NULL as active for backward compatibility). */
+    
     @Query("SELECT s FROM OutletSchedule s WHERE s.outlet.outletId = :outletId AND (s.status IS NULL OR s.status <> 'DELETED') ORDER BY s.priority DESC")
     List<OutletSchedule> findActiveByOutletOrderByPriorityDesc(@Param("outletId") Long outletId);
 

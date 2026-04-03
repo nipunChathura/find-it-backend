@@ -6,16 +6,14 @@ import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
 import lombok.Data;
 
-/**
- * Request for adding an outlet. Merchant is required; sub-merchant is optional.
- */
+
 @Data
 public class OutletAddRequest {
 
     @NotNull(message = "Merchant ID is required")
     private Long merchantId;
 
-    /** Optional. When set, outlet is linked to this sub-merchant (must belong to the merchant). */
+    
     private Long subMerchantId;
 
     @NotNull(message = "Outlet name is required")
@@ -68,6 +66,6 @@ public class OutletAddRequest {
     @Size(max = 500)
     private String remarks;
 
-    /** Optional outlet rating (e.g. 0.0 to 5.0). */
+    
     private Double rating;
 }

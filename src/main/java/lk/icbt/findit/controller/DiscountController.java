@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Item Discount CRUD. Access: SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT.
- */
+
 @RestController
 @RequestMapping("/api/discounts")
 @RequiredArgsConstructor
@@ -33,7 +31,7 @@ public class DiscountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
-    /** Get discounts by outlet ID. Returns ACTIVE discounts that have at least one item from this outlet. CUSTOMER can call. */
+    
     @PreAuthorize("hasAnyRole('SYSADMIN', 'ADMIN', 'MERCHANT', 'SUBMERCHANT', 'CUSTOMER')")
     @GetMapping(value = "/outlet/{outletId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody

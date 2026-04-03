@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 
-/**
- * Sub-merchant details in login response. Used in subMerchantInfo.
- */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SubMerchantInfo {

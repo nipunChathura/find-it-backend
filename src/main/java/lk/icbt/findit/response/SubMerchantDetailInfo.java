@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 
-/** Lightweight sub-merchant info for embedding in outlet detail response. */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SubMerchantDetailInfo {

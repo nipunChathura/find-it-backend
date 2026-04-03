@@ -3,14 +3,12 @@ package lk.icbt.findit.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lombok.Data;
 
 import java.util.Date;
 
-/**
- * Full outlet details for GET /api/outlets/assigned. Includes current open/closed status
- * and optional subMerchantInfo when the outlet is assigned to a sub-merchant.
- */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutletAssignedItemResponse {
@@ -45,14 +43,15 @@ public class OutletAssignedItemResponse {
     private String remarks;
     private String status;
     private Date subscriptionValidUntil;
+    private SubscriptionStatus subscriptionStatus;
     private Double rating;
 
-    /** OPEN or CLOSED based on current time and outlet schedule. */
+    
     private String currentStatus;
 
-    /** Number of items in this outlet (excluding DELETED). */
+    
     private Long itemCount;
 
-    /** Present when outlet is assigned to a sub-merchant (subMerchantId != null). */
+    
     private SubMerchantInfo subMerchantInfo;
 }

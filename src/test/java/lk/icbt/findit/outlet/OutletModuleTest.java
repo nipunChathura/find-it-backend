@@ -34,10 +34,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * JUnit tests for Outlet module APIs.
- * Covers: List outlets, Search nearby/assigned, Get details, Add outlet, Update outlet, Schedules, Status, Discounts, Feedbacks.
- */
+
 @Tag("unit")
 @WebMvcTest(OutletController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -72,7 +69,7 @@ class OutletModuleTest {
     @MockitoBean
     private ApiRequestLoggingFilter apiRequestLoggingFilter;
 
-    // ---------- UT11: List outlets ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT11 - List outlets with optional filters")
@@ -90,7 +87,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$[0].currentStatus").value("OPEN"));
     }
 
-    // ---------- UT12: Search nearby / assigned outlets ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT12 - List outlets assigned to merchant")
@@ -107,7 +104,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$[0].outletName").value("Assigned Outlet"));
     }
 
-    // ---------- UT13: Get outlet details ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT13 - Get outlet details by id")
@@ -125,7 +122,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$.outlet.outletName").value("Detail Outlet"));
     }
 
-    // ---------- UT14: Add outlet ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT14 - Add new outlet")
@@ -148,7 +145,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$.outletName").value("New Outlet"));
     }
 
-    // ---------- UT15: Get outlet status (open/closed) ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT15 - Get outlet open/closed status")
@@ -164,7 +161,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$.status").value("OPEN"));
     }
 
-    // ---------- UT16: Get outlet schedules ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT16 - Get outlet schedules grouped by type")
@@ -176,7 +173,7 @@ class OutletModuleTest {
                 .andExpect(status().isOk());
     }
 
-    // ---------- UT17: Get outlet discounts ----------
+    
     @Test
     @WithMockUser(roles = "CUSTOMER")
     @DisplayName("UT17 - Get current discounts for outlet")
@@ -190,7 +187,7 @@ class OutletModuleTest {
                 .andExpect(jsonPath("$[0].discountId").value(1));
     }
 
-    // ---------- UT18: Get outlet feedbacks ----------
+    
     @Test
     @WithMockUser(roles = "CUSTOMER")
     @DisplayName("UT18 - Get feedbacks for outlet")

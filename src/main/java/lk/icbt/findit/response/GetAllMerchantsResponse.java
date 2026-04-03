@@ -10,6 +10,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GetAllMerchantsResponse extends Response {
-    /** Single list: main merchants (type=MERCHANT) and sub-merchants (type=SUB_MERCHANT, with parentMerchantName). */
+    
     private List<MerchantListItemResponse> merchants;
 }

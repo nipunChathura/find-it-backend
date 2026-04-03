@@ -16,14 +16,14 @@ public class OutletScheduleRequest {
     @NotNull(message = "Schedule type is required")
     private ScheduleType scheduleType;
 
-    /** For NORMAL: MONDAY, TUESDAY, ... SUNDAY */
+    
     @Size(max = 15)
     private String dayOfWeek;
 
-    /** For EMERGENCY / DAILY */
+    
     private LocalDate specialDate;
 
-    /** For TEMPORARY */
+    
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -36,7 +36,7 @@ public class OutletScheduleRequest {
     private String closeTime;
 
     @JsonProperty("isClosed")
-    private Boolean closed;   // true = closed for the period
+    private Boolean closed;   
     @Size(max = 255)
     private String reason;
     private Integer priority;

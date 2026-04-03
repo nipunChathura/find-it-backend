@@ -25,8 +25,8 @@ public class SubMerchantAddDTO extends Response {
     private Long subMerchantId;
     private String subMerchantStatus;
 
-    /** Optional. When set, a User is created for sub-merchant login. Not persisted on SubMerchant. */
+    
     private String password;
-    /** Optional. Login username when creating User. When null and password set, merchantEmail is used. */
+    
     private String username;
 }

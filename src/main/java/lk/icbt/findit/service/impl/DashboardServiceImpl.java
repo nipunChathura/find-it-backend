@@ -40,7 +40,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public DashboardSummaryResponse getSummary() {
-//        long users = userRepository.countByStatusNot(Constants.USER_DELETED_STATUS);
+
         ArrayList<String> statuses = new ArrayList<>();
         statuses.add(Constants.USER_DELETED_STATUS);
         ArrayList<Role> userRole = new ArrayList<>();

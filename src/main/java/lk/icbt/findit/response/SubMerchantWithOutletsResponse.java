@@ -24,6 +24,6 @@ public class SubMerchantWithOutletsResponse extends Response {
     private MerchantType merchantType;
     private String subMerchantStatus;
 
-    /** All outlets assigned to this sub-merchant. */
+    
     private List<OutletListItemResponse> outlets;
 }

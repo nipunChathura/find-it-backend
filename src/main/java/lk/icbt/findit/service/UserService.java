@@ -34,9 +34,7 @@ public interface UserService {
 
     UserApprovalDTO approveUser(UserApprovalDTO dto);
 
-    /**
-     * Reject a pending user (set status to INACTIVE).
-     */
+    
     UserUpdateDTO rejectUser(Long userId, String reason);
 
     PasswordChangeDTO changePassword(PasswordChangeDTO dto);
@@ -53,9 +51,6 @@ public interface UserService {
 
     ForgotPasswordApprovalDTO approveForgotPassword(ForgotPasswordApprovalDTO dto);
 
-    /**
-     * Updates the user's profile image. fileName should be the name returned by the image upload API (e.g. for type profile).
-     * Stores profileImageUrl as "profile/{fileName}".
-     */
+    
     UserResponse changeProfileImage(Long userId, String fileName);
 }

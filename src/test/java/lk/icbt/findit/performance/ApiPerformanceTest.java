@@ -39,12 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * JUnit API performance tests.
- * Measures response time for selected endpoints and asserts they meet SLA thresholds.
- * Run with: mvn test -Dtest=ApiPerformanceTest
- * Or run only performance tests: mvn test -Dtest="*Performance*Test"
- */
+
 @Tag("performance")
 @WebMvcTest(OutletController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -54,9 +49,9 @@ class ApiPerformanceTest {
 
     private static final int WARMUP_ITERATIONS = 3;
     private static final int MEASURED_ITERATIONS = 10;
-    /** SLA: average response time (ms) for mocked controller layer. */
+    
     private static final long SLA_AVG_MS = 500;
-    /** SLA: p95 response time (ms). */
+    
     private static final long SLA_P95_MS = 800;
 
     @Autowired
@@ -203,7 +198,7 @@ class ApiPerformanceTest {
                 .isLessThan(SLA_P95_MS);
     }
 
-    /** Runs warmup then measured iterations, returns elapsed time in ms per measured request. */
+    
     private long[] runTimedRequests(int measured, int warmup, RequestRunner runner) throws Exception {
         for (int i = 0; i < warmup; i++) {
             runner.run();

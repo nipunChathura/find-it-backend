@@ -6,13 +6,7 @@ import org.junit.platform.suite.api.AfterSuite;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
-/**
- * Single entry point for all API performance tests.
- * Runs all performance test classes and prints the combined
- * "API RESPONSE TIME / SYSTEM PERFORMANCE SUMMARY" table once at the end.
- *
- * Run with: mvn test -Dtest=AllApiPerformanceSummaryTest
- */
+
 @Tag("performance")
 @Suite
 @DisplayName("API Response Time / System Performance Summary - All APIs")

@@ -17,7 +17,7 @@ public interface SubMerchantRepository extends JpaRepository<SubMerchant, Long> 
 
     Optional<SubMerchant> findBySubMerchantIdAndMerchant_MerchantId(Long subMerchantId, Long merchantId);
 
-    /** All sub-merchants for the given merchant. */
+    
     List<SubMerchant> findByMerchant_MerchantId(Long merchantId);
 
     @Query("SELECT s FROM SubMerchant s JOIN FETCH s.merchant WHERE s.status != :excludedStatus")

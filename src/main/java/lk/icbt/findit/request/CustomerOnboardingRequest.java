@@ -8,9 +8,7 @@ import jakarta.validation.constraints.Size;
 import lk.icbt.findit.entity.MembershipType;
 import lombok.Data;
 
-/**
- * Request for customer onboarding (self-registration). Includes customer details and login credentials.
- */
+
 @Data
 public class CustomerOnboardingRequest {
 
@@ -25,7 +23,7 @@ public class CustomerOnboardingRequest {
     @Size(max = 255)
     private String email;
 
-    /** Phone number; any country format allowed (e.g. +94 77 123 4567, +1 555 123 4567). */
+    
     @Size(max = 30)
     private String phoneNumber;
 

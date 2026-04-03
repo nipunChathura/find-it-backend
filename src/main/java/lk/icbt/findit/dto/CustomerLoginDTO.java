@@ -19,7 +19,7 @@ public class CustomerLoginDTO extends Response {
     private Role role;
     private Long customerId;
     private String profileImageUrl;
-    /** Customer profile details (from customers table when customerId is set). */
+    
     private String firstName;
     private String lastName;
     private String phoneNumber;

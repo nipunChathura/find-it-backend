@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 public class DashboardSummaryResponse extends Response {
 
     private Long users;
-    /** User count by role (excluding DELETED). */
+    
     private Long usersAdmin;
     private Long usersSysadmin;
     private Long usersUser;

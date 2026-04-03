@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Payment CRUD. Access: SYSADMIN, ADMIN, MERCHANT, SUBMERCHANT.
- */
+
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor

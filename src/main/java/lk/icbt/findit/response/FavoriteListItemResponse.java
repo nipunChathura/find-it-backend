@@ -7,13 +7,13 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/** One favorite with full item and outlet details. */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FavoriteListItemResponse {
 
     private Long favoriteId;
-    // Item detail
+    
     private Long itemId;
     private String itemName;
     private String itemDescription;
@@ -24,7 +24,7 @@ public class FavoriteListItemResponse {
     private Boolean availability;
     private String itemImage;
     private String itemStatus;
-    // Outlet detail
+    
     private Long outletId;
     private String outletName;
     private String addressLine1;

@@ -44,10 +44,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * JUnit tests for Merchant module APIs.
- * Covers: Merchant login, Onboarding, Get merchant with outlets, Update profile, Sub-merchant approve/reject, Forgot password.
- */
+
 @Tag("unit")
 @WebMvcTest(MerchantController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -82,7 +79,7 @@ class MerchantModuleTest {
     @MockitoBean
     private ApiRequestLoggingFilter apiRequestLoggingFilter;
 
-    // ---------- UT19: Merchant login with valid credentials ----------
+    
     @Test
     @DisplayName("UT19 - Merchant login with valid credentials")
     void merchantLoginWithValidCredentials_returnsSuccess() throws Exception {
@@ -109,7 +106,7 @@ class MerchantModuleTest {
                 .andExpect(jsonPath("$.username").value("merchant1"));
     }
 
-    // ---------- UT20: Merchant onboarding ----------
+    
     @Test
     @DisplayName("UT20 - Merchant onboarding")
     void merchantOnboarding_returnsCreated() throws Exception {
@@ -139,7 +136,7 @@ class MerchantModuleTest {
                 .andExpect(jsonPath("$.merchantName").value("New Merchant"));
     }
 
-    // ---------- UT21: Get merchant with outlets ----------
+    
     @Test
     @WithMockUser(username = "merchant1", roles = "MERCHANT")
     @DisplayName("UT21 - Get merchant with outlets")
@@ -162,7 +159,7 @@ class MerchantModuleTest {
                 .andExpect(jsonPath("$.merchantName").value("My Merchant"));
     }
 
-    // ---------- UT22: Update merchant profile ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT22 - Update merchant profile")
@@ -190,7 +187,7 @@ class MerchantModuleTest {
                 .andExpect(jsonPath("$.merchantName").value("Updated Name"));
     }
 
-    // ---------- UT23: Merchant forgot password ----------
+    
     @Test
     @DisplayName("UT23 - Merchant forgot password")
     void merchantForgotPassword_returnsOk() throws Exception {
@@ -211,7 +208,7 @@ class MerchantModuleTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
     }
 
-    // ---------- UT24: Approve sub-merchant ----------
+    
     @Test
     @WithMockUser(roles = "MERCHANT")
     @DisplayName("UT24 - Approve sub-merchant")

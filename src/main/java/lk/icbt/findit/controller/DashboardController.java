@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Dashboard KPI summary. Access: SYSADMIN, ADMIN.
- */
+
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor

@@ -22,10 +22,13 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
             "ORDER BY d.discountId")
     List<Discount> findAllWithFilters(@Param("status") String status, @Param("itemId") Long itemId, @Param("outletId") Long outletId);
 
-    /** ACTIVE discounts for the given outlet that are currently valid (today between startDate and endDate, or no dates set). */
+    
     @Query("SELECT DISTINCT d FROM Discount d JOIN d.discountItems di WHERE d.status = 'ACTIVE' " +
             "AND di.item.outlet.outletId = :outletId " +
             "AND (d.startDate IS NULL OR d.startDate <= :today) AND (d.endDate IS NULL OR d.endDate >= :today) " +
             "ORDER BY d.discountId")
     List<Discount> findActiveByOutletIdAndDateValid(@Param("outletId") Long outletId, @Param("today") Date today);
+
+    @Query("SELECT d FROM Discount d WHERE d.status = :activeStatus AND d.endDate IS NOT NULL AND d.endDate < :startOfToday")
+    List<Discount> findActiveWithEndDateBefore(@Param("activeStatus") String activeStatus, @Param("startOfToday") Date startOfToday);
 }

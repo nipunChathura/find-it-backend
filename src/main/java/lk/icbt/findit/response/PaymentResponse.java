@@ -16,8 +16,8 @@ public class PaymentResponse extends Response {
     private String outletName;
     private String paymentType;
     private BigDecimal amount;
-    private String paymentDate;   // ISO date
+    private String paymentDate;   
     private String paidMonth;
     private String receiptImage;
-    private String paymentStatus; // PENDING, APPROVED, REJECTED
+    private String paymentStatus; 
 }

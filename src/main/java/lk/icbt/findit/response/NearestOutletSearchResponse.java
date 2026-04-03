@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
-/** Response for nearest outlet search: list of outlets (with distance and open status) each containing matching items. */
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

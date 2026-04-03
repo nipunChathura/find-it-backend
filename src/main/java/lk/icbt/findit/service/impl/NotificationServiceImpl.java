@@ -48,7 +48,7 @@ public class NotificationServiceImpl implements NotificationService {
                 sendPushNotification(request.getToken(), request.getTitle(), request.getBody() != null ? request.getBody() : "");
             } catch (InvalidRequestException e) {
                 log.warn("Push notification failed for user {}: {}", request.getUserId(), e.getMessage());
-                // Notification is already saved; do not fail the request
+                
             }
         }
         return saved;

@@ -28,9 +28,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Merchant APIs. Onboarding is public. Profile update requires merchant JWT only.
- */
+
 @RestController
 @RequestMapping("/api/merchants")
 @RequiredArgsConstructor

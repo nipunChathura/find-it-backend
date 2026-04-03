@@ -10,13 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Collects API performance metrics and generates a System Performance Summary table.
- * Columns: Endpoint, Avg Response Time (ms), P95 (ms), Status, Total Time (ms), Request Count, Users Count, Warmup.
- */
+
 public final class PerformanceSummaryReport {
 
-    /** Shared instance for all performance test classes; combined table when running *Performance*Test. */
+    
     private static final PerformanceSummaryReport SHARED = new PerformanceSummaryReport();
 
     private static final String REPORT_DIR = "target";
@@ -48,7 +45,7 @@ public final class PerformanceSummaryReport {
         return SHARED;
     }
 
-    /** Record without p95 (e.g. single-request test). */
+    
     public void record(String endpoint,
                        double avgResponseTimeMs,
                        int status,
@@ -63,7 +60,7 @@ public final class PerformanceSummaryReport {
         return new ArrayList<>(rows);
     }
 
-    /** Prints the summary table to console and writes to target/api-performance-summary.txt */
+    
     public void printAndWriteTable() {
         String table = buildTableString();
         System.out.println(table);

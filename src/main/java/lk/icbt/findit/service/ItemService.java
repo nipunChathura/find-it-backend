@@ -10,7 +10,7 @@ public interface ItemService {
 
     ItemResponse create(ItemRequest request);
 
-    /** Create item. When authenticatedUsername is provided and user is SUBMERCHANT, notifies parent merchant. */
+    
     ItemResponse create(ItemRequest request, String authenticatedUsername);
 
     ItemResponse getById(Long itemId);
@@ -21,7 +21,7 @@ public interface ItemService {
 
     ItemResponse update(Long itemId, ItemRequest request);
 
-    /** Update item. When authenticatedUsername is provided and user is SUBMERCHANT, notifies parent merchant. */
+    
     ItemResponse update(Long itemId, ItemRequest request, String authenticatedUsername);
 
     void delete(Long itemId);

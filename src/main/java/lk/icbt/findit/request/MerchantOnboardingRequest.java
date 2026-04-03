@@ -9,9 +9,7 @@ import jakarta.validation.constraints.Size;
 import lk.icbt.findit.entity.MerchantType;
 import lombok.Data;
 
-/**
- * Request for merchant onboarding (self-registration). Includes merchant details and login credentials.
- */
+
 @Data
 public class MerchantOnboardingRequest {
 
@@ -39,10 +37,7 @@ public class MerchantOnboardingRequest {
     @NotNull(message = "Merchant type is required")
     private MerchantType merchantType;
 
-    /**
-     * Optional. When set (positive), onboarding creates a sub-merchant under this parent merchant.
-     * When null or not provided, onboarding creates a main merchant.
-     */
+    
     @JsonAlias("parent_merchant_id")
     private Long parentMerchantId;
 
@@ -53,6 +48,6 @@ public class MerchantOnboardingRequest {
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 255)
-//    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,12}$", message = "Password must be 6-12 characters with at least one letter and one digit")
+
     private String password;
 }

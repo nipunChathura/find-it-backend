@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Province APIs. Get all provinces with optional search by name and description.
- */
+
 @RestController
 @RequestMapping("/api/provinces")
 @RequiredArgsConstructor

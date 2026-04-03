@@ -46,7 +46,7 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
                     ResponseCodes.VALIDATION_ERROR_CODE, "Only merchant or sub-merchant can access dashboard");
         }
 
-        // MERCHANT: outlets by merchant_id column; SUBMERCHANT: outlets by sub_merchant_id column
+        
         List<Outlet> outlets;
         if (user.getRole() == Role.MERCHANT && user.getMerchantId() != null) {
             outlets = outletRepository.findByMerchant_MerchantId(user.getMerchantId());
@@ -63,7 +63,7 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
                 .filter(o -> Constants.OUTLET_ACTIVE_STATUS.equals(o.getStatus()))
                 .count();
 
-        // Item count: exclude DELETED status
+        
         long totalItems = outletIds.isEmpty() ? 0L : itemRepository.countByOutlet_OutletIdInAndStatusNot(outletIds, Constants.ITEM_DELETED_STATUS);
 
         List<Payment> pendingPaymentList = outletIds.isEmpty()
@@ -87,7 +87,7 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
         List<OutletListItemResponse> outletList = outlets.stream()
                 .map(o -> toOutletListItem(o, outletIdToItemCount))
                 .collect(Collectors.toList());
-        // Dashboard outlet section: show only first 2 outlets
+        
         int maxOutletsOnDashboard = 2;
         if (outletList.size() > maxOutletsOnDashboard) {
             outletList = new ArrayList<>(outletList.subList(0, maxOutletsOnDashboard));
@@ -151,11 +151,12 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
         r.setRemarks(o.getRemarks());
         r.setStatus(o.getStatus());
         r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setSubscriptionStatus(o.getSubscriptionStatus());
         r.setRating(o.getRating());
         return r;
     }
 
-    /** Builds map subMerchantId -> profileImageUrl from users table (first SUBMERCHANT user per sub-merchant). */
+    
     private Map<Long, String> getSubMerchantProfileImages(List<Long> subMerchantIds) {
         if (subMerchantIds == null || subMerchantIds.isEmpty()) {
             return new HashMap<>();

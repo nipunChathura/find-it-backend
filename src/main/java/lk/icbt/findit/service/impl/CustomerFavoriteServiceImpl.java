@@ -5,6 +5,7 @@ import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.entity.Customer;
 import lk.icbt.findit.entity.CustomerFavorite;
 import lk.icbt.findit.entity.Outlet;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.CustomerFavoriteRepository;
 import lk.icbt.findit.repository.CustomerRepository;
@@ -113,6 +114,7 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
         d.setOutletId(o.getOutletId());
         d.setOutletName(o.getOutletName());
         d.setStatus(o.getStatus());
+        d.setSubscriptionStatus(o.getSubscriptionStatus());
         d.setAddressLine1(o.getAddressLine1());
         d.setAddressLine2(o.getAddressLine2());
         d.setContactNumber(o.getContactNumber());

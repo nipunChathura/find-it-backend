@@ -22,9 +22,7 @@ public class SendNotificationRequest {
     @Size(max = 1000)
     private String body;
 
-    /**
-     * Optional FCM device token. When provided, a push notification is sent via Firebase.
-     */
+    
     @Size(max = 500)
     private String token;
 }
