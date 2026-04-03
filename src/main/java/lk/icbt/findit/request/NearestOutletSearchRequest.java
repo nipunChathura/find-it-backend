@@ -25,6 +25,9 @@ public class NearestOutletSearchRequest {
     private String itemName;
 
     
+    private String outletName;
+
+    
     @NotNull(message = "Distance (km) is required")
     @DecimalMin(value = "0.1", message = "Distance must be at least 0.1 km")
     @DecimalMax(value = "500", message = "Distance must be at most 500 km")

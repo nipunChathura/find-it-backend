@@ -14,6 +14,8 @@ public class CustomerFavoriteResponse extends Response {
     private Long outletId;
     private String nickname;
 
+    private Double rating;
+
     
     private OutletDetailItem outlet;
 }

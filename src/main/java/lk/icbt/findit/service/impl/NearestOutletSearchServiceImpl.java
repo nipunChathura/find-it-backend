@@ -49,6 +49,13 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
     @Override
     public NearestOutletSearchResponse searchNearestOutlets(NearestOutletSearchRequest request, Long customerId) {
         String itemName = request.getItemName() != null ? request.getItemName().trim() : null;
+        if (itemName != null && itemName.isEmpty()) {
+            itemName = null;
+        }
+        String outletName = request.getOutletName() != null ? request.getOutletName().trim() : null;
+        if (outletName != null && outletName.isEmpty()) {
+            outletName = null;
+        }
 
         OutletType outletType = null;
         if (request.getOutletType() != null && !request.getOutletType().isBlank()) {
@@ -59,25 +66,56 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
             }
         }
 
+        boolean hasItemName = itemName != null;
+        boolean hasOutletName = outletName != null;
+
         List<Item> items;
-        if (itemName != null && !itemName.isEmpty()) {
+        if (!hasItemName && !hasOutletName) {
+            items = itemRepository.findForNearestOutletSearchAllItems(
+                    request.getCategoryId(),
+                    outletType
+            );
+        } else if (hasItemName && !hasOutletName) {
             items = itemRepository.findForNearestOutletSearch(
                     itemName,
                     request.getCategoryId(),
                     outletType
             );
-        } else {
-            items = itemRepository.findForNearestOutletSearchAllItems(
+        } else if (!hasItemName && hasOutletName) {
+            items = itemRepository.findForNearestOutletSearchByOutletName(
+                    outletName,
                     request.getCategoryId(),
                     outletType
             );
+        } else {
+            List<Item> byItem = itemRepository.findForNearestOutletSearch(
+                    itemName,
+                    request.getCategoryId(),
+                    outletType
+            );
+            List<Item> byOutlet = itemRepository.findForNearestOutletSearchByOutletName(
+                    outletName,
+                    request.getCategoryId(),
+                    outletType
+            );
+            items = mergeDistinctItems(byItem, byOutlet);
         }
 
         if (items.isEmpty()) {
             NearestOutletSearchResponse response = new NearestOutletSearchResponse();
             response.setStatus(ResponseStatus.SUCCESS.getStatus());
             response.setResponseCode(ResponseCodes.SUCCESS_CODE);
-            response.setResponseMessage(itemName != null ? "No outlets found with matching items." : "No outlets found within criteria.");
+            final String msg;
+            if (!hasItemName && !hasOutletName) {
+                msg = "No outlets found within criteria.";
+            } else if (hasItemName && hasOutletName) {
+                msg = "No outlets found with matching items or outlet names.";
+            } else if (hasItemName) {
+                msg = "No outlets found with matching items.";
+            } else {
+                msg = "No outlets found with matching outlet names.";
+            }
+            response.setResponseMessage(msg);
             response.setOutlets(Collections.emptyList());
             return response;
         }
@@ -175,6 +213,22 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
         response.setResponseMessage("Search completed.");
         response.setOutlets(limited);
         return response;
+    }
+
+    
+    private static List<Item> mergeDistinctItems(List<Item> first, List<Item> second) {
+        Map<Long, Item> byId = new LinkedHashMap<>();
+        for (Item i : first) {
+            if (i.getItemId() != null) {
+                byId.putIfAbsent(i.getItemId(), i);
+            }
+        }
+        for (Item i : second) {
+            if (i.getItemId() != null) {
+                byId.putIfAbsent(i.getItemId(), i);
+            }
+        }
+        return new ArrayList<>(byId.values());
     }
 
     private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {

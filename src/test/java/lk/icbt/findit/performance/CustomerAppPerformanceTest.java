@@ -128,6 +128,7 @@ class CustomerAppPerformanceTest {
     void postFavorites_responseTime() throws Exception {
         CustomerFavoriteRequest req = new CustomerFavoriteRequest();
         req.setOutletId(1L);
+        req.setRating(4.0);
         CustomerFavoriteResponse res = new CustomerFavoriteResponse();
         when(customerFavoriteService.create(eq(1L), any())).thenReturn(res);
 

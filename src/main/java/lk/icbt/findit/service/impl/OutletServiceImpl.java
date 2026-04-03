@@ -113,7 +113,9 @@ public class OutletServiceImpl implements OutletService {
             if (user.getRole() != Role.SYSADMIN && user.getRole() != Role.ADMIN && (user.getMerchantId() == null || !user.getMerchantId().equals(merchantId))) {
                 throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Merchant can only view their own outlets");
             }
+            System.out.println("merchantId = " + merchantId);
             list = outletRepository.findAllOutletsByMerchantId(merchantId);
+            System.out.println("list.size() = " + list.size());
         }
         LocalDateTime now = LocalDateTime.now();
         List<OutletAssignedItemResponse> result = list.stream()

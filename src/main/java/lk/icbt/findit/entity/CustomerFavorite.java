@@ -27,4 +27,7 @@ public class CustomerFavorite {
 
     @Column(name = "nickname", length = 100)
     private String nickname;
+
+    @Column(name = "rating")
+    private Double rating;
 }

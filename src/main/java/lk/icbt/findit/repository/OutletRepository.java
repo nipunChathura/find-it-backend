@@ -54,7 +54,10 @@ public interface OutletRepository extends JpaRepository<Outlet, Long> {
     List<Outlet> findBySubMerchant_SubMerchantIdIn(List<Long> subMerchantIds);
 
     
-    @Query("SELECT o FROM Outlet o WHERE (o.merchant.merchantId = :merchantId AND o.subMerchant IS NULL) OR (o.subMerchant.merchant.merchantId = :merchantId)")
+    @Query("SELECT DISTINCT o FROM Outlet o " +
+            "LEFT JOIN o.subMerchant sm " +
+            "LEFT JOIN sm.merchant smm " +
+            "WHERE o.merchant.merchantId = :merchantId OR smm.merchantId = :merchantId")
     List<Outlet> findAllOutletsByMerchantId(@Param("merchantId") Long merchantId);
 
     long countByStatus(String status);

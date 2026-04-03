@@ -189,6 +189,12 @@ public class CustomerAppController {
     }
 
     
+    @GetMapping(value = "/outlets/{outletId}/feedbacks", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<FeedbackResponse>> listFeedbackByOutlet(@PathVariable Long outletId) {
+        getAuthenticatedCustomer();
+        return ResponseEntity.ok(feedbackService.listByOutletId(outletId));
+    }
 
     
     @PostMapping(value = "/favorites", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -5,7 +5,6 @@ import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.entity.Customer;
 import lk.icbt.findit.entity.CustomerFavorite;
 import lk.icbt.findit.entity.Outlet;
-import lk.icbt.findit.entity.SubscriptionStatus;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.CustomerFavoriteRepository;
 import lk.icbt.findit.repository.CustomerRepository;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +32,9 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
     @Override
     @Transactional
     public CustomerFavoriteResponse create(Long customerId, CustomerFavoriteRequest request) {
+        if (request.getRating() == null) {
+            throw new InvalidRequestException(ResponseCodes.VALIDATION_ERROR_CODE, "Rating is required");
+        }
         if (favoriteRepository.existsByCustomer_CustomerIdAndOutlet_OutletId(customerId, request.getOutletId())) {
             throw new InvalidRequestException(ResponseCodes.CUSTOMER_FAVORITE_ALREADY_EXISTS_CODE,
                     "This outlet is already in your favorites");
@@ -45,8 +48,11 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
         entity.setCustomer(customer);
         entity.setOutlet(outlet);
         entity.setNickname(request.getNickname() != null ? request.getNickname().trim() : null);
+        entity.setRating(request.getRating());
 
         CustomerFavorite saved = favoriteRepository.save(entity);
+        favoriteRepository.flush();
+        recalculateOutletRating(outlet.getOutletId());
         return toResponse(saved, "Favorite saved successfully.");
     }
 
@@ -69,7 +75,11 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
     public CustomerFavoriteResponse update(Long id, Long customerId, CustomerFavoriteRequest request) {
         CustomerFavorite entity = favoriteRepository.findByIdAndCustomer_CustomerId(id, customerId)
                 .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CUSTOMER_FAVORITE_NOT_FOUND_CODE, "Favorite not found"));
+        Long previousOutletId = entity.getOutlet().getOutletId();
         entity.setNickname(request.getNickname() != null ? request.getNickname().trim() : null);
+        if (request.getRating() != null) {
+            entity.setRating(request.getRating());
+        }
         if (request.getOutletId() != null && !request.getOutletId().equals(entity.getOutlet().getOutletId())) {
             if (favoriteRepository.existsByCustomer_CustomerIdAndOutlet_OutletId(customerId, request.getOutletId())) {
                 throw new InvalidRequestException(ResponseCodes.CUSTOMER_FAVORITE_ALREADY_EXISTS_CODE,
@@ -80,16 +90,37 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
             entity.setOutlet(outlet);
         }
         CustomerFavorite saved = favoriteRepository.save(entity);
+        favoriteRepository.flush();
+        recalculateOutletRating(previousOutletId);
+        if (!Objects.equals(previousOutletId, saved.getOutlet().getOutletId())) {
+            recalculateOutletRating(saved.getOutlet().getOutletId());
+        }
         return toResponse(saved, "Favorite updated successfully.");
     }
 
     @Override
     @Transactional
     public void delete(Long id, Long customerId) {
-        if (!favoriteRepository.findByIdAndCustomer_CustomerId(id, customerId).isPresent()) {
-            throw new InvalidRequestException(ResponseCodes.CUSTOMER_FAVORITE_NOT_FOUND_CODE, "Favorite not found");
-        }
+        CustomerFavorite entity = favoriteRepository.findByIdAndCustomer_CustomerId(id, customerId)
+                .orElseThrow(() -> new InvalidRequestException(ResponseCodes.CUSTOMER_FAVORITE_NOT_FOUND_CODE, "Favorite not found"));
+        Long outletId = entity.getOutlet().getOutletId();
         favoriteRepository.deleteByIdAndCustomer_CustomerId(id, customerId);
+        favoriteRepository.flush();
+        recalculateOutletRating(outletId);
+    }
+
+    private void recalculateOutletRating(Long outletId) {
+        Double avg = favoriteRepository.averageRatingByOutletId(outletId);
+        Outlet outlet = outletRepository.findById(outletId).orElse(null);
+        if (outlet == null) {
+            return;
+        }
+        if (avg == null) {
+            outlet.setRating(null);
+        } else {
+            outlet.setRating(Math.round(avg * 100.0) / 100.0);
+        }
+        outletRepository.save(outlet);
     }
 
     private CustomerFavoriteResponse toResponse(CustomerFavorite entity, String message) {
@@ -106,6 +137,7 @@ public class CustomerFavoriteServiceImpl implements CustomerFavoriteService {
             r.setOutlet(toOutletDetail(entity.getOutlet()));
         }
         r.setNickname(entity.getNickname());
+        r.setRating(entity.getRating());
         return r;
     }
 
