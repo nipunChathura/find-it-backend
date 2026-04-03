@@ -151,6 +151,7 @@ public class MerchantAppDashboardServiceImpl implements MerchantAppDashboardServ
         r.setRemarks(o.getRemarks());
         r.setStatus(o.getStatus());
         r.setSubscriptionValidUntil(o.getSubscriptionValidUntil());
+        r.setSubscriptionStatus(o.getSubscriptionStatus());
         r.setRating(o.getRating());
         return r;
     }

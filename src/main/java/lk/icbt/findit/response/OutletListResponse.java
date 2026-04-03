@@ -1,6 +1,7 @@
 package lk.icbt.findit.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class OutletListResponse {
     private Long id;
     private String name;
     private String status;         
-    private String currentStatus;  
+    private String currentStatus;
+    private SubscriptionStatus subscriptionStatus;
     private Double rating;
 }

@@ -5,6 +5,7 @@ import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.common.ResponseStatus;
 import lk.icbt.findit.entity.Outlet;
 import lk.icbt.findit.entity.Payment;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.OutletRepository;
 import lk.icbt.findit.repository.PaymentRepository;
@@ -67,12 +68,19 @@ public class PaymentServiceImpl implements PaymentService {
         boolean isApproved = Constants.PAYMENT_APPROVED_STATUS.equalsIgnoreCase(paymentStatus)
                 || "ACTIVE".equalsIgnoreCase(paymentStatus);
 
-        if (isApproved) {
-            Date currentSubEnd = outlet.getSubscriptionValidUntil();
-            Date baseDate = (currentSubEnd != null && currentSubEnd.after(now)) ? currentSubEnd : now;
-            outlet.setSubscriptionValidUntil(addMonths(baseDate, 1));
+        if (!isApproved) {
+            if (isSubscriptionExpiredForRenewal(outlet)) {
+                outlet.setStatus(Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
+                outlet.setSubscriptionStatus(SubscriptionStatus.PENDING);
+                outlet.setModifiedDatetime(now);
+                outletRepository.save(outlet);
+            }
+            return;
         }
-        
+
+        Date currentSubEnd = outlet.getSubscriptionValidUntil();
+        Date baseDate = (currentSubEnd != null && currentSubEnd.after(now)) ? currentSubEnd : now;
+        outlet.setSubscriptionValidUntil(addMonths(baseDate, 1));
 
         Date paidDate = payment.getPaymentDate() != null ? payment.getPaymentDate() : now;
         Date todayStart = startOfDay(now);
@@ -81,14 +89,24 @@ public class PaymentServiceImpl implements PaymentService {
         if (subEnd != null) {
             if (!subEnd.before(todayStart)) {
                 outlet.setStatus(Constants.OUTLET_ACTIVE_STATUS);
+                outlet.setSubscriptionStatus(SubscriptionStatus.ACTIVE);
             } else if (subEnd.before(paidDate)) {
                 outlet.setStatus(Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS);
+                outlet.setSubscriptionStatus(SubscriptionStatus.PENDING);
             } else {
                 outlet.setStatus(Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS);
+                outlet.setSubscriptionStatus(SubscriptionStatus.EXPIRED);
             }
         }
         outlet.setModifiedDatetime(now);
         outletRepository.save(outlet);
+    }
+
+    private static boolean isSubscriptionExpiredForRenewal(Outlet outlet) {
+        if (outlet.getSubscriptionStatus() == SubscriptionStatus.EXPIRED) {
+            return true;
+        }
+        return Constants.OUTLET_EXPIRED_SUBSCRIPTION_STATUS.equals(outlet.getStatus());
     }
 
     private static Date addMonths(Date date, int months) {
@@ -178,8 +196,12 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
 
         Outlet outlet = payment.getOutlet();
-        if (outlet != null && Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS.equals(outlet.getStatus())) {
-            outletService.verifyPayment(outlet.getOutletId());
+        if (outlet != null) {
+            outletRepository.findById(outlet.getOutletId()).ifPresent(fresh -> {
+                if (Constants.OUTLET_PENDING_SUBSCRIPTION_STATUS.equals(fresh.getStatus())) {
+                    outletService.verifyPayment(fresh.getOutletId());
+                }
+            });
         }
         return toResponse(paymentRepository.findById(paymentId).orElse(payment), "Payment approved successfully.");
     }

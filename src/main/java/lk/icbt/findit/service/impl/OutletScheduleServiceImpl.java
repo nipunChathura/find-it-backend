@@ -5,6 +5,7 @@ import lk.icbt.findit.common.ResponseCodes;
 import lk.icbt.findit.entity.Outlet;
 import lk.icbt.findit.entity.OutletSchedule;
 import lk.icbt.findit.entity.ScheduleType;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lk.icbt.findit.exception.InvalidRequestException;
 import lk.icbt.findit.repository.HolidayRepository;
 import lk.icbt.findit.repository.OutletRepository;
@@ -41,6 +42,9 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
     @Override
     public OutletStatusResponse getOutletStatus(Long outletId, LocalDateTime checkTime) {
         ensureOutletExists(outletId);
+        SubscriptionStatus subscriptionStatus = outletRepository.findById(outletId)
+                .map(Outlet::getSubscriptionStatus)
+                .orElse(null);
         LocalDate date = checkTime.toLocalDate();
         LocalTime time = checkTime.toLocalTime();
 
@@ -51,6 +55,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
             return OutletStatusResponse.builder()
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
+                    .subscriptionStatus(subscriptionStatus)
                     .isClosed("Y")
                     .scheduleType(null)
                     .reason(reason)
@@ -64,6 +69,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
             return OutletStatusResponse.builder()
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
+                    .subscriptionStatus(subscriptionStatus)
                     .isClosed("Y")
                     .scheduleType(scheduleTypeName)
                     .openTime(match.getOpenTime())
@@ -79,6 +85,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
             return OutletStatusResponse.builder()
                     .outletId(outletId)
                     .status(OutletStatusResponse.STATUS_CLOSED)
+                    .subscriptionStatus(subscriptionStatus)
                     .isClosed("Y")
                     .scheduleType(scheduleTypeName)
                     .reason("Opening hours not set")
@@ -92,6 +99,7 @@ public class OutletScheduleServiceImpl implements OutletScheduleService {
         return OutletStatusResponse.builder()
                 .outletId(outletId)
                 .status(openNow ? OutletStatusResponse.STATUS_OPEN : OutletStatusResponse.STATUS_CLOSED)
+                .subscriptionStatus(subscriptionStatus)
                 .isClosed(openNow ? "N" : "Y")
                 .scheduleType(scheduleTypeName)
                 .openTime(match.getOpenTime())

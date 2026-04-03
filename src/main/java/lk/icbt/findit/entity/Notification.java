@@ -20,7 +20,7 @@ public class Notification {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "type", nullable = false, length = 20)
+    @Column(name = "type", nullable = false, length = 64)
     private String type;
 
     @Column(name = "title", nullable = false, length = 255)

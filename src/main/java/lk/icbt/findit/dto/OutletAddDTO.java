@@ -3,6 +3,7 @@ package lk.icbt.findit.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lk.icbt.findit.response.Response;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,5 +39,6 @@ public class OutletAddDTO extends Response {
     private Long outletId;
     private String outletStatus;
     private java.util.Date subscriptionValidUntil;
+    private SubscriptionStatus subscriptionStatus;
     private Double rating;
 }

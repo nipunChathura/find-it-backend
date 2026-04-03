@@ -129,6 +129,7 @@ public class NearestOutletSearchServiceImpl implements NearestOutletSearchServic
             resultItem.setLatitude(outlet.getLatitude());
             resultItem.setLongitude(outlet.getLongitude());
             resultItem.setStatus(outlet.getStatus());
+            resultItem.setSubscriptionStatus(outlet.getSubscriptionStatus());
             resultItem.setRating(outlet.getRating());
             resultItem.setDistanceKm(round(distanceKm, 2));
             resultItem.setCurrentStatus(statusResponse.getStatus());

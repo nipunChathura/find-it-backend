@@ -2,6 +2,7 @@ package lk.icbt.findit.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,9 +22,10 @@ public class OutletStatusResponse {
     public static final String STATUS_CLOSED = "CLOSED";
 
     private Long outletId;
-    private String status;           
+    private String status;
 
-    
+    private SubscriptionStatus subscriptionStatus;
+
     private String scheduleType;
 
     

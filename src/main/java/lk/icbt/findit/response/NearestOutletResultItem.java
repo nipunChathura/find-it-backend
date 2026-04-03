@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lk.icbt.findit.entity.BusinessCategory;
 import lk.icbt.findit.entity.OutletType;
+import lk.icbt.findit.entity.SubscriptionStatus;
 import lombok.Data;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class NearestOutletResultItem {
     private Double latitude;
     private Double longitude;
     private String status;
+    private SubscriptionStatus subscriptionStatus;
     private Double rating;
 
     

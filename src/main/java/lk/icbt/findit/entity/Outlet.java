@@ -1,7 +1,6 @@
 package lk.icbt.findit.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -67,6 +66,10 @@ public class Outlet extends AbstractEntity{
     private String status;
     @Column(name = "subscription_valid_until")
     private java.util.Date subscriptionValidUntil;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subscription_status", length = 32)
+    private SubscriptionStatus subscriptionStatus;
     @Column(name = "remarks")
     private String remarks;
     @Column(name = "onboarding_status")

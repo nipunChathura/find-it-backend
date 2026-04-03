@@ -61,6 +61,8 @@ public class Constants {
     
     public static final int OUTLET_FREE_TRIAL_MONTHS = 3;
 
+    public static final int OUTLET_SUBSCRIPTION_VERIFY_EXTEND_MONTHS = 1;
+
     
     public static final String DB_TRUE = "Y";
     public static final String DB_FALSE = "N";
